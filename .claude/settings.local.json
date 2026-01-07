@@ -2,7 +2,29 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(chmod:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(lsof:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(cypher-shell:*)",
+      "Bash(brew install:*)",
+      "Bash(ls:*)",
+      "Bash(export VAULT_ADDR=\"http://localhost:8200\")",
+      "Bash(export VAULT_TOKEN=\"dev-root-token\")",
+      "Bash(terraform init:*)",
+      "Bash(terraform plan:*)",
+      "Bash(terraform apply:*)",
+      "Bash(docker logs:*)",
+      "Bash(export VAULT_TOKEN=\"root\")",
+      "Bash(./scripts/neo4j_utils.sh validate:*)",
+      "Bash(./scripts/neo4j_utils.sh:*)",
+      "Bash(terraform state list:*)",
+      "Bash(vault list:*)",
+      "Bash(vault read:*)",
+      "Bash(vault status:*)",
+      "Bash(terraform destroy:*)",
+      "Bash(timeout 180 terraform apply:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,13 @@
+# Vault Configuration
+vault_url   = "http://localhost:8200"
+environment = "dev"
+
+# Neo4j Graph Database Integration (Optional)
+# Set to true to enable visual identity relationship mapping
+enable_neo4j_integration = false
+
+# Neo4j Connection Details (only needed if enable_neo4j_integration = true)
+# Defaults match the docker-compose.yml configuration
+# neo4j_url      = "bolt://localhost:7687"
+# neo4j_username = "neo4j"
+# neo4j_password = "vaultgraph123"

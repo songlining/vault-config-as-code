@@ -845,14 +845,14 @@ Machine "vault-client.machine-id.customer.demo" authenticates:
 │ Step 1: PKI Auth Role validates certificate                 │
 ├─────────────────────────────────────────────────────────────┤
 │ pki-auth-roles-appone.yaml                                  │
-│   ↓                                                          │
+│   ↓                                                         │
 │ vault_cert_auth_backend_role["cicdpipeline"]                │
-│   ↓                                                          │
-│ Checks:                                                      │
+│   ↓                                                         │
+│ Checks:                                                     │
 │ - Is CN "vault-client.machine-id.customer.demo"?  ✓         │
 │ - Is cert signed by intermediate CA?  ✓                     │
 │ - Is cert valid (not expired)?  ✓                           │
-│   ↓                                                          │
+│   ↓                                                         │
 │ Grants policies:                                            │
 │ - pki-self-renewal                                          │
 │ - super-user                                                │
@@ -866,13 +866,13 @@ Machine "vault-client.machine-id.customer.demo" authenticates:
 │ Step 2: Identity Entity provides context                    │
 ├─────────────────────────────────────────────────────────────┤
 │ application_linux_host_vault-client.yaml                    │
-│   ↓                                                          │
+│   ↓                                                         │
 │ vault_identity_entity["vault-client.machine-id..."]         │
-│   ↓                                                          │
+│   ↓                                                         │
 │ Adds policies:                                              │
 │ - application-identity-token-policies                       │
 │ - super-user                                                │
-│   ↓                                                          │
+│   ↓                                                         │
 │ Adds metadata:                                              │
 │ - environment: production                                   │
 │ - business_unit: retail_banking                             │
@@ -890,12 +890,12 @@ Machine "vault-client.machine-id.customer.demo" authenticates:
 │ - server-pki                                                │
 │ - client-pki                                                │
 │ - application-identity-token-policies                       │
-│                                                              │
+│                                                             │
 │ Metadata (from entity):                                     │
 │ - environment: production                                   │
 │ - business_unit: retail_banking                             │
 │ - spiffe_id: spiffe://vault/application/production/...      │
-│                                                              │
+│                                                             │
 │ Capabilities:                                               │
 │ - Can renew its own certificate (pki-self-renewal)          │
 │ - Can generate OIDC tokens (application-identity-token...)  │

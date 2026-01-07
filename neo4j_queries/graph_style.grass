@@ -1,0 +1,111 @@
+// Neo4j Browser Graph Style Sheet (.grass)
+// This file contains styling configuration for the Vault Identity Graph
+//
+// To import: Open Neo4j Browser > Click the gear icon (bottom left) >
+// Import Graph Style Sheet > Paste this file's contents
+
+node {
+  diameter: 50px;
+  color: #A5ABB6;
+  border-color: #9AA1AC;
+  border-width: 2px;
+  text-color-internal: #FFFFFF;
+  font-size: 10px;
+}
+
+relationship {
+  color: #A5ABB6;
+  shaft-width: 2px;
+  font-size: 9px;
+  padding: 3px;
+  text-color-external: #000000;
+  text-color-internal: #FFFFFF;
+  caption: '<type>';
+}
+
+// Human Identity - Blue
+node.HumanIdentity {
+  color: #3498db;
+  border-color: #2980b9;
+  text-color-internal: #FFFFFF;
+  diameter: 60px;
+  caption: '{name}';
+}
+
+// Application Identity - Green
+node.ApplicationIdentity {
+  color: #2ecc71;
+  border-color: #27ae60;
+  text-color-internal: #FFFFFF;
+  diameter: 60px;
+  caption: '{name}';
+}
+
+// Identity Group - Orange
+node.IdentityGroup {
+  color: #e67e22;
+  border-color: #d35400;
+  text-color-internal: #FFFFFF;
+  diameter: 65px;
+  caption: '{name}';
+}
+
+// Policy - Purple
+node.Policy {
+  color: #9b59b6;
+  border-color: #8e44ad;
+  text-color-internal: #FFFFFF;
+  diameter: 50px;
+  caption: '{name}';
+}
+
+// Auth Method - Red
+node.AuthMethod {
+  color: #e74c3c;
+  border-color: #c0392b;
+  text-color-internal: #FFFFFF;
+  diameter: 55px;
+  caption: '{type}';
+}
+
+// Generic Identity node (parent class)
+node.Identity {
+  color: #95a5a6;
+  border-color: #7f8c8d;
+  diameter: 55px;
+}
+
+// Relationship Styles
+relationship.MEMBER_OF {
+  color: #3498db;
+  shaft-width: 3px;
+  caption: 'MEMBER OF';
+}
+
+relationship.HAS_SUBGROUP {
+  color: #e67e22;
+  shaft-width: 2px;
+  caption: 'SUBGROUP';
+}
+
+relationship.HAS_POLICY {
+  color: #9b59b6;
+  shaft-width: 2px;
+  caption: 'POLICY';
+}
+
+relationship.AUTHENTICATES_VIA {
+  color: #e74c3c;
+  shaft-width: 3px;
+  caption: 'AUTH';
+}
+
+// Environment-specific Application styling (advanced)
+node.ApplicationIdentity {
+  caption: '{name}\n({environment})';
+}
+
+// Show additional info for humans
+node.HumanIdentity {
+  caption: '{name}\n{role}';
+}

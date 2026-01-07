@@ -13,6 +13,8 @@ Terraform is a tool for building, changing, and versioning infrastructure safely
 - Terraform >= 1.10.0
 - HashiCorp Vault Enterprise (running instance)
 - Python 3.x (for identity validation)
+- Docker and Docker Compose (for local development and Neo4j)
+- cypher-shell CLI (optional, for Neo4j graph database integration)
 - pre-commit (optional, for code quality hooks)
 
 ## Use Cases Implemented
@@ -37,19 +39,41 @@ Multi-tenant isolation with delegated administration and environment-specific po
 
 ## Quick Start
 
-1. Ensure you have a running Vault Enterprise instance and set the required environment variables:
+### Local Development with Docker
+
+1. Start Vault and Neo4j using Docker Compose:
 ```bash
-export VAULT_LICENSE="your-vault-enterprise-license"
-export VAULT_ADDR="https://your-vault-instance:8200"
-export VAULT_TOKEN="your-vault-token"
+docker-compose up -d
 ```
 
-2. Initialize and apply Terraform configuration:
+2. Set environment variables:
 ```bash
+export VAULT_LICENSE="your-vault-enterprise-license"
+export VAULT_ADDR="http://localhost:8200"
+export VAULT_TOKEN="dev-root-token"
+```
+
+3. Initialize and apply Terraform configuration:
+```bash
+# Copy the example tfvars file
+cp dev.tfvars.example dev.tfvars
+
+# Edit dev.tfvars and set enable_neo4j_integration = true (optional)
+
+# Apply Terraform configuration
 terraform init
 terraform plan -var-file=dev.tfvars
 terraform apply -var-file=dev.tfvars
 ```
+
+4. (Optional) Access Neo4j Browser for identity visualization:
+```
+http://localhost:7474
+Username: neo4j
+Password: vaultgraph123
+```
+
+See [Neo4j Quick Start Guide](docs/neo4j_quickstart.md) for a detailed tutorial.
 
 ## Usage
 
@@ -93,6 +117,46 @@ Install and run hooks:
 pre-commit install
 pre-commit run --all-files
 ```
+
+### Neo4j Graph Database (Identity Visualization)
+
+Visualize and explore Vault identity relationships in a graph database:
+
+```bash
+# Start Neo4j
+docker-compose up -d neo4j
+
+# Enable in dev.tfvars
+echo 'enable_neo4j_integration = true' >> dev.tfvars
+
+# Apply Terraform to populate graph
+terraform apply -var-file=dev.tfvars
+
+# Access Neo4j Browser
+open http://localhost:7474
+
+# Run validation checks
+./scripts/neo4j_utils.sh validate
+
+# Show graph statistics
+./scripts/neo4j_utils.sh stats
+
+# Create backup
+./scripts/neo4j_utils.sh backup
+```
+
+**Features:**
+- Visual exploration of identity hierarchies
+- Query relationships between identities, groups, and policies
+- Impact analysis before making changes
+- Authentication method mapping
+- Automated validation checks
+
+**Documentation:**
+- [Quick Start Guide](docs/neo4j_quickstart.md) - 10-minute tutorial
+- [Setup Guide](docs/neo4j_setup.md) - Detailed installation and configuration
+- [Query Library](docs/neo4j_queries.md) - 50+ useful Cypher queries
+- [Graph Styling](neo4j_queries/graph_style.grass) - Custom visualization styles
 
 ## Architecture
 

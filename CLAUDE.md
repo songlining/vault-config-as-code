@@ -10,12 +10,13 @@ This repository demonstrates HashiCorp Vault configuration management using Terr
 
 ### Core Components
 - **Main Configuration**: `main.tf` contains super-user policies and GitHub auth backend configuration
-- **Terraform Modules**: 
+- **Terraform Modules**:
   - `applications` module: Creates KV v2 mounts and policies per application/environment
   - `vault_namespace` module: Manages Vault namespaces with admin tokens and policies
 - **Identity Management**: YAML-driven identity configuration with Python validation scripts
 - **PKI Infrastructure**: Certificate authority setup and role management for machine/human identities
 - **Authentication Backends**: GitHub OAuth, AWS IAM roles, and PKI-based authentication
+- **Neo4j Graph Database**: Visual identity relationship mapping and exploration (optional)
 
 ### Key Terraform Files
 - `versions.tf`: Provider versions (Terraform ~1.10.0, Vault ~5.1.0, TLS ~4.0.6)
@@ -64,12 +65,59 @@ python3 validate_identities.py
 ```
 
 ### Local Development Environment
-Start Vault Enterprise container:
+Start Vault Enterprise and Neo4j containers:
 ```bash
 docker compose up -d
 ```
 
-The container runs on `http://localhost:8200` with root token `dev-root-token`.
+Services:
+- **Vault**: `http://localhost:8200` (root token: `dev-root-token`)
+- **Neo4j Browser**: `http://localhost:7474` (credentials: `neo4j/vaultgraph123`)
+
+### Neo4j Graph Database Integration
+The repository includes optional Neo4j integration for visualizing identity relationships:
+
+```bash
+# Enable Neo4j integration in dev.tfvars
+enable_neo4j_integration = true
+
+# Apply Terraform to populate graph
+terraform apply -var-file=dev.tfvars
+
+# Access Neo4j Browser
+open http://localhost:7474
+
+# Run utility commands
+./scripts/neo4j_utils.sh stats      # Show graph statistics
+./scripts/neo4j_utils.sh validate   # Run validation checks
+./scripts/neo4j_utils.sh backup     # Create backup
+```
+
+**Neo4j Files:**
+- `neo4j_provider.tf`: Provider configuration and connectivity checks
+- `neo4j_variables.tf`: Neo4j-specific variables
+- `neo4j_locals.tf`: Data transformation for graph relationships
+- `neo4j_graph.tf`: Node and relationship creation
+- `neo4j_outputs.tf`: Helpful output information
+- `docker-compose.yml`: Neo4j service configuration
+
+**Documentation:**
+- `docs/neo4j_quickstart.md`: 10-minute tutorial
+- `docs/neo4j_setup.md`: Detailed setup guide
+- `docs/neo4j_queries.md`: Query library with 50+ examples
+- `neo4j_queries/*.cypher`: Pre-built query scripts
+- `neo4j_queries/graph_style.grass`: Custom visualization styling
+
+**Graph Model:**
+- **Nodes**: HumanIdentity, ApplicationIdentity, IdentityGroup, Policy, AuthMethod
+- **Relationships**: MEMBER_OF, HAS_SUBGROUP, HAS_POLICY, AUTHENTICATES_VIA
+
+**Use Cases:**
+- Visual exploration of identity hierarchies
+- Impact analysis before making changes
+- Troubleshooting access issues
+- Onboarding new team members
+- Access auditing and reviews
 
 ## Important Patterns
 
