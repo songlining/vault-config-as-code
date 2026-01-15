@@ -2,6 +2,11 @@
 
 This repository demonstrates HashiCorp Vault configuration management using Terraform, implementing Infrastructure as Code principles for stateful security services. The project showcases enterprise-grade patterns for managing Vault policies, authentication methods, PKI infrastructure, and application secrets across multiple environments.
 
+This repo is forked and built on top of https://github.com/ausmartway/vault-config-as-code and added the following for education purpose:
+ - docker compose based Vault instance to provision this terraform plan
+ - Neo4j graph database for a visual presentation.
+ - ARCHITECTURE.md for an end-to-end explanation of the data flow
+
 ## Challenges
 
 Vault is a stateful application, meaning it needs to preserve its configurations into its backend storage. Vault can be configured via the UI, CLI or API. However, these methods are not ideal for managing configuration in a version controlled way. This repository shows how to manage Vault configuration using Terraform.
@@ -16,6 +21,7 @@ Terraform is a tool for building, changing, and versioning infrastructure safely
 - Docker and Docker Compose (for local development and Neo4j)
 - cypher-shell CLI (optional, for Neo4j graph database integration)
 - pre-commit (optional, for code quality hooks)
+- vault.hclic (vault enterprise license file) in the root directory of this repo
 
 ## Use Cases Implemented
 
@@ -48,7 +54,6 @@ docker-compose up -d
 
 2. Set environment variables:
 ```bash
-export VAULT_LICENSE="your-vault-enterprise-license"
 export VAULT_ADDR="http://localhost:8200"
 export VAULT_TOKEN="dev-root-token"
 ```
@@ -199,7 +204,6 @@ Applications are provisioned via the `applications` module with environment-spec
 ## Environment Variables
 
 Required for Vault Enterprise:
-- `VAULT_LICENSE`: Enterprise license key
 - `VAULT_ADDR`: Vault server URL
 - `VAULT_TOKEN`: Authentication token
 
