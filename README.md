@@ -21,7 +21,7 @@ Terraform is a tool for building, changing, and versioning infrastructure safely
 - Docker and Docker Compose (for local development and Neo4j)
 - cypher-shell CLI (optional, for Neo4j graph database integration)
 - pre-commit (optional, for code quality hooks)
-- vault.hclic (vault enterprise license file) in the root directory of this repo
+- vault.hclic (vault enterprise license file) in the root directory of this repo. This is needed for the docker based vault ent instance.  You can rewrite the docker compose file to use the opensource version. 
 
 ## Use Cases Implemented
 
