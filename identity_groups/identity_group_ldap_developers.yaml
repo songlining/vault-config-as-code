@@ -1,0 +1,9 @@
+name: LDAP Developers
+contact: yulei@hashicorp.com
+type: external
+ldap_group_name: vault-developers
+human_identities: []
+application_identities: []
+sub_groups: []
+identity_group_policies:
+  - developer-policy

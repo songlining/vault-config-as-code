@@ -1,0 +1,18 @@
+metadata:
+  version: "1.0.0"
+  created_date: "2025-01-16"
+  description: "LDAP Human Identity for Jane Smith with multi-auth"
+
+identity:
+  name: "Jane Smith"
+  email: "jane.smith@hashicorp.com"
+  role: "developer"
+  team: "platform_engineering"
+
+authentication:
+  ldap: "jane.smith"
+  github: "janesmith"  # Multi-auth: can also use GitHub
+
+policies:
+  identity_policies:
+    - developer-policy

@@ -1,0 +1,17 @@
+metadata:
+  version: "1.0.0"
+  created_date: "2025-01-16"
+  description: "LDAP Human Identity for John Doe"
+
+identity:
+  name: "John Doe"
+  email: "john.doe@hashicorp.com"
+  role: "developer"
+  team: "platform_engineering"
+
+authentication:
+  ldap: "john.doe"
+
+policies:
+  identity_policies:
+    - developer-policy

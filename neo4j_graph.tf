@@ -94,9 +94,9 @@ CYPHER
   }
 }
 
-# Create Identity Group nodes
-resource "null_resource" "neo4j_identity_groups" {
-  for_each = var.enable_neo4j_integration ? local.identity_groups_map : {}
+# Create Identity Group nodes (internal groups)
+resource "null_resource" "neo4j_internal_identity_groups" {
+  for_each = var.enable_neo4j_integration ? local.internal_groups_map : {}
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -105,7 +105,32 @@ resource "null_resource" "neo4j_identity_groups" {
       cypher-shell -a ${var.neo4j_url} -u ${var.neo4j_username} -p ${var.neo4j_password} <<'CYPHER'
       MERGE (g:IdentityGroup {name: "${each.key}"})
       SET g.contact = "${each.value.contact}",
-          g.vault_id = "${vault_identity_group.identity_group[each.key].id}",
+          g.type = "internal",
+          g.vault_id = "${vault_identity_group.internal_group[each.key].id}",
+          g.policies = ${jsonencode(each.value.identity_group_policies)};
+CYPHER
+    EOT
+  }
+
+  triggers = {
+    config = jsonencode(each.value)
+  }
+}
+
+# Create Identity Group nodes (external groups)
+resource "null_resource" "neo4j_external_identity_groups" {
+  for_each = var.enable_neo4j_integration ? local.external_groups_map : {}
+
+  depends_on = [null_resource.neo4j_initialize]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      cypher-shell -a ${var.neo4j_url} -u ${var.neo4j_username} -p ${var.neo4j_password} <<'CYPHER'
+      MERGE (g:IdentityGroup {name: "${each.key}"})
+      SET g.contact = "${each.value.contact}",
+          g.type = "external",
+          g.ldap_group_name = "${try(each.value.ldap_group_name, "")}",
+          g.vault_id = "${vault_identity_group.external_group[each.key].id}",
           g.policies = ${jsonencode(each.value.identity_group_policies)};
 CYPHER
     EOT
@@ -158,7 +183,8 @@ resource "null_resource" "neo4j_human_group_relationships" {
 
   depends_on = [
     null_resource.neo4j_human_identities,
-    null_resource.neo4j_identity_groups
+    null_resource.neo4j_internal_identity_groups,
+    null_resource.neo4j_external_identity_groups
   ]
 
   provisioner "local-exec" {
@@ -178,7 +204,8 @@ resource "null_resource" "neo4j_app_group_relationships" {
 
   depends_on = [
     null_resource.neo4j_app_identities,
-    null_resource.neo4j_identity_groups
+    null_resource.neo4j_internal_identity_groups,
+    null_resource.neo4j_external_identity_groups
   ]
 
   provisioner "local-exec" {
@@ -196,7 +223,10 @@ CYPHER
 resource "null_resource" "neo4j_group_subgroup_relationships" {
   for_each = var.enable_neo4j_integration ? { for r in local.group_subgroup_relationships : r.key => r } : {}
 
-  depends_on = [null_resource.neo4j_identity_groups]
+  depends_on = [
+    null_resource.neo4j_internal_identity_groups,
+    null_resource.neo4j_external_identity_groups
+  ]
 
   provisioner "local-exec" {
     command = <<-EOT
@@ -254,7 +284,8 @@ resource "null_resource" "neo4j_group_policy_relationships" {
   for_each = var.enable_neo4j_integration ? { for r in local.group_policy_relationships : r.key => r } : {}
 
   depends_on = [
-    null_resource.neo4j_identity_groups,
+    null_resource.neo4j_internal_identity_groups,
+    null_resource.neo4j_external_identity_groups,
     null_resource.neo4j_policies
   ]
 

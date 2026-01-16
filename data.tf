@@ -72,6 +72,18 @@ locals {
     config.name => config
   }
 
+  # Split identity groups by type (internal vs external)
+  # Groups without explicit type default to "internal" for backward compatibility
+  internal_groups_map = {
+    for name, config in local.identity_groups_map :
+    name => config if try(config.type, "internal") == "internal"
+  }
+
+  external_groups_map = {
+    for name, config in local.identity_groups_map :
+    name => config if try(config.type, "") == "external"
+  }
+
   # PKI Roles: keyed by name
   pki_roles_map = {
     for filename, config in local.configs_by_type.pkiroles :
@@ -116,6 +128,24 @@ locals {
   app_with_tfc_workspace = {
     for k, v in local.application_identities_map :
     k => v if try(v.authentication.tfc_workspace, null) != null && v.authentication.tfc_workspace != ""
+  }
+
+  # LDAP human identities (files starting with ldap_human_)
+  ldap_human_identities_map = {
+    for filename, config in local.configs_by_type.identities :
+    config.identity.name => config
+    if startswith(filename, "ldap_human_")
+  }
+
+  # Filtered LDAP identity maps for specific authentication types
+  ldap_human_with_ldap = {
+    for k, v in local.ldap_human_identities_map :
+    k => v if try(v.authentication.ldap, null) != null && v.authentication.ldap != ""
+  }
+
+  ldap_human_with_github = {
+    for k, v in local.ldap_human_identities_map :
+    k => v if try(v.authentication.github, null) != null && v.authentication.github != ""
   }
 }
 

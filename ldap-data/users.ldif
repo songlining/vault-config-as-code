@@ -1,0 +1,82 @@
+# LDAP Directory Structure for Vault Authentication Demo
+# This file is loaded by OpenLDAP container on startup
+#
+# Structure:
+#   dc=demo,dc=hashicorp,dc=com
+#   ├── ou=people (user accounts)
+#   └── ou=groups (group memberships)
+
+# Organizational Unit for People
+dn: ou=people,dc=demo,dc=hashicorp,dc=com
+objectClass: organizationalUnit
+ou: people
+
+# Organizational Unit for Groups
+dn: ou=groups,dc=demo,dc=hashicorp,dc=com
+objectClass: organizationalUnit
+ou: groups
+
+# =============================================================================
+# USERS
+# =============================================================================
+
+# John Doe - Developer
+dn: cn=john.doe,ou=people,dc=demo,dc=hashicorp,dc=com
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: john.doe
+sn: Doe
+givenName: John
+mail: john.doe@hashicorp.com
+uid: john.doe
+userPassword: password123
+
+# Jane Smith - Developer with multi-auth
+dn: cn=jane.smith,ou=people,dc=demo,dc=hashicorp,dc=com
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: jane.smith
+sn: Smith
+givenName: Jane
+mail: jane.smith@hashicorp.com
+uid: jane.smith
+userPassword: password456
+
+# Admin User - Administrator
+dn: cn=admin.user,ou=people,dc=demo,dc=hashicorp,dc=com
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: admin.user
+sn: User
+givenName: Admin
+mail: admin.user@hashicorp.com
+uid: admin.user
+userPassword: admin789
+
+# =============================================================================
+# GROUPS
+# =============================================================================
+
+# Vault Admins Group
+dn: cn=vault-admins,ou=groups,dc=demo,dc=hashicorp,dc=com
+objectClass: groupOfNames
+cn: vault-admins
+member: cn=admin.user,ou=people,dc=demo,dc=hashicorp,dc=com
+
+# Vault Developers Group
+dn: cn=vault-developers,ou=groups,dc=demo,dc=hashicorp,dc=com
+objectClass: groupOfNames
+cn: vault-developers
+member: cn=john.doe,ou=people,dc=demo,dc=hashicorp,dc=com
+member: cn=jane.smith,ou=people,dc=demo,dc=hashicorp,dc=com
+
+# Vault Users Group (all users)
+dn: cn=vault-users,ou=groups,dc=demo,dc=hashicorp,dc=com
+objectClass: groupOfNames
+cn: vault-users
+member: cn=john.doe,ou=people,dc=demo,dc=hashicorp,dc=com
+member: cn=jane.smith,ou=people,dc=demo,dc=hashicorp,dc=com
+member: cn=admin.user,ou=people,dc=demo,dc=hashicorp,dc=com

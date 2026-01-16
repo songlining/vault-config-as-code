@@ -1,0 +1,17 @@
+metadata:
+  version: "1.0.0"
+  created_date: "2025-01-16"
+  description: "LDAP Admin User"
+
+identity:
+  name: "Admin User"
+  email: "admin.user@hashicorp.com"
+  role: "admin"
+  team: "platform_engineering"
+
+authentication:
+  ldap: "admin.user"
+
+policies:
+  identity_policies:
+    - super-user

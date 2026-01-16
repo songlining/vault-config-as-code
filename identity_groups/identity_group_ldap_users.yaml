@@ -1,0 +1,9 @@
+name: LDAP Users
+contact: yulei@hashicorp.com
+type: external
+ldap_group_name: vault-users
+human_identities: []
+application_identities: []
+sub_groups: []
+identity_group_policies:
+  - human-identity-token-policies

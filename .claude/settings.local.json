@@ -24,7 +24,9 @@
       "Bash(vault read:*)",
       "Bash(vault status:*)",
       "Bash(terraform destroy:*)",
-      "Bash(timeout 180 terraform apply:*)"
+      "Bash(timeout 180 terraform apply:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker volume rm:*)"
     ],
     "deny": [],
     "ask": []

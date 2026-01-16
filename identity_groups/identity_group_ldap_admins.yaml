@@ -1,0 +1,9 @@
+name: LDAP Admins
+contact: yulei@hashicorp.com
+type: external
+ldap_group_name: vault-admins
+human_identities: []
+application_identities: []
+sub_groups: []
+identity_group_policies:
+  - super-user
