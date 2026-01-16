@@ -26,7 +26,11 @@
       "Bash(terraform destroy:*)",
       "Bash(timeout 180 terraform apply:*)",
       "Bash(docker compose:*)",
-      "Bash(docker volume rm:*)"
+      "Bash(docker volume rm:*)",
+      "Bash(vault delete:*)",
+      "Bash(vault secrets list:*)",
+      "Bash(vault write:*)",
+      "Bash(terraform state rm:*)"
     ],
     "deny": [],
     "ask": []

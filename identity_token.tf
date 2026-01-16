@@ -102,4 +102,9 @@ resource "vault_identity_oidc_provider" "default" {
     vault_identity_oidc_role.application_identity.client_id,
     vault_identity_oidc_role.human_identity.client_id
   ]
+
+  lifecycle {
+    # The default OIDC provider is a built-in Vault resource that cannot be deleted
+    ignore_changes = all
+  }
 }
