@@ -394,7 +394,7 @@
         "Can be run directly: python mock-entraid-scim-client.py",
         "Helpful output showing response status and PR URLs"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-25",
