@@ -1116,3 +1116,75 @@
 - The Dockerfile enables local development, testing, and production deployment of the SCIM Bridge service
 - This pattern follows industry standards for Python microservice containerization with FastAPI
 
+---
+
+### Iteration 17 - Story-20: Create SCIM Bridge Requirements File
+
+**Date:** 2026-01-23
+
+**Completed:** Story-20 (Create SCIM Bridge Requirements File)
+
+**What was done:**
+- Updated existing scim-bridge/requirements.txt to meet all acceptance criteria
+- Added comprehensive comments and documentation for each dependency
+- Included all required dependencies with pinned versions:
+  - fastapi==0.109.0 (FastAPI framework for SCIM API endpoints)
+  - uvicorn[standard]==0.27.0 (ASGI server with standard extras)
+  - pydantic==2.5.3 (data validation and serialization)
+  - pydantic-settings==2.1.0 (environment variable configuration management)
+  - PyYAML==6.0.1 (YAML parsing and generation)
+  - jsonschema==4.21.1 (JSON Schema validation)
+  - requests==2.31.0 (HTTP client for GitHub API calls)
+  - python-multipart==0.0.6 (form data parsing for FastAPI)
+- Added optional PyGithub==2.1.1 as commented dependency for future GitHub enhancements
+- Organized file with clear sections and descriptive comments for each dependency
+- All versions pinned with exact version specifications (==) for reproducibility
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/requirements.txt created
+  ✅ fastapi included (version pinned 0.109.0)
+  ✅ uvicorn[standard] included for ASGI server
+  ✅ pydantic included for data validation (with pydantic-settings)
+  ✅ pyyaml included for YAML generation
+  ✅ jsonschema included for schema validation
+  ✅ requests included for GitHub API calls
+  ✅ python-multipart included for form data
+  ✅ PyGithub included as optional dependency
+  ✅ All versions pinned for reproducibility (8 exact version pins)
+- File format validation completed - all requirements properly formatted
+- Dependencies aligned with Python 3.11 (from Dockerfile) and existing code
+
+**Learnings:**
+- Python requirements.txt best practices:
+  - Use exact version pins (==) for all production dependencies to ensure reproducibility
+  - Include comprehensive comments explaining the purpose of each dependency
+  - Organize dependencies logically: core framework → data validation → I/O libraries → optional extras
+  - Pin both primary and sub-dependencies (pydantic + pydantic-settings) for complete control
+  - Use descriptive comments that explain not just what the dependency is, but why it's needed
+- FastAPI microservice dependency patterns:
+  - fastapi for the framework + uvicorn[standard] for ASGI server with extras
+  - pydantic for request/response validation + pydantic-settings for configuration
+  - PyYAML for file generation + jsonschema for schema validation
+  - requests for HTTP API calls + python-multipart for form support
+  - Optional dependencies should be documented and commented for future use
+- Version selection strategies:
+  - Choose stable, well-tested versions compatible with Python 3.11
+  - Use recent versions but avoid bleeding-edge releases for production stability
+  - Verify compatibility between related packages (pydantic + pydantic-settings)
+  - Consider security patches and maintenance status of chosen versions
+- Requirements file organization:
+  - Header comment explaining the file's purpose and versioning strategy
+  - Group related dependencies with section headers
+  - Individual comments for each dependency explaining its role
+  - Optional dependencies clearly marked and documented
+  - Consistent formatting and alignment for readability
+- Integration with containerization:
+  - Requirements.txt is copied early in Dockerfile for optimal Docker layer caching
+  - Exact version pins prevent "works on my machine" issues in containers
+  - All dependencies needed for runtime should be included (no dev dependencies)
+  - File should be self-documenting for new developers and ops teams
+- Story-20 completes the Python dependency foundation for the SCIM Bridge application
+- This enables the next steps: Story-21 (.env.example), Story-22 (docker-compose), and testing
+- The requirements.txt works with the existing Dockerfile (Story-19) and will be consumed by docker-compose (Story-22)
+

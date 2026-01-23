@@ -1,7 +1,31 @@
+# SCIM Bridge for Vault - Python Dependencies
+# All versions pinned for reproducibility and security in production deployments
+
+# FastAPI framework for building the SCIM API endpoints
 fastapi==0.109.0
+
+# ASGI server to run the FastAPI application
 uvicorn[standard]==0.27.0
-pydantic==2.5.0
-pyyaml==6.0.1
-jsonschema==4.20.0
+
+# Data validation and serialization for SCIM models
+pydantic==2.5.3
+
+# Pydantic Settings for environment variable configuration management
+pydantic-settings==2.1.0
+
+# YAML parsing and generation for identity files
+PyYAML==6.0.1
+
+# JSON Schema validation for YAML schema compliance
+jsonschema==4.21.1
+
+# HTTP client for GitHub API calls and general HTTP requests
 requests==2.31.0
+
+# Form data parsing support (required for some FastAPI features)
 python-multipart==0.0.6
+
+# Optional: GitHub API client for enhanced GitHub operations
+# PyGithub provides a high-level interface to GitHub API
+# Currently using requests directly, but PyGithub available for future enhancements
+# PyGithub==2.1.1

@@ -323,7 +323,7 @@
         "PyGithub or similar for GitHub operations (optional)",
         "All versions pinned for reproducibility"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-21",
