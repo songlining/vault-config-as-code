@@ -765,3 +765,85 @@
 - UserStore maintains SCIM ID to Vault identity mapping for PATCH/DELETE/GET operations
 - Story-14 completes user mapping persistence for Story-17 (main.py)
 
+---
+
+### Iteration 15 - Story-15: Create Group Handler Service
+
+**Date:** 2026-01-23
+
+**Completed:** Story-15 (Create Group Handler Service)
+
+**What was done:**
+- Created scim-bridge/app/services/group_handler.py with comprehensive GroupHandler class (286 lines)
+- Implemented __init__ method accepting repo_clone_dir parameter with validation
+- Implemented sync_user_groups() method that synchronizes user's group memberships:
+  - Adds user to new groups they should be in
+  - Removes user from groups they shouldn't be in anymore
+  - Creates new group files if groups don't exist
+  - Returns list of modified file paths
+- Implemented remove_user_from_group() method for targeted group removal
+- Implemented _load_all_groups() private method loading all identity_groups/*.yaml files with error handling
+- Implemented _find_group_file() method finding groups by display name
+- Implemented _add_user_to_group() private method adding users to entraid_human_identities array
+- Implemented _create_group_file() private method creating new group files with proper structure
+- Implemented _remove_user_from_group_file() helper method for group removal
+- Implemented _sanitize_group_name() method for safe filename generation
+- Updated scim-bridge/app/services/__init__.py to export GroupHandler
+- Created comprehensive test suite with 5 test categories - all tests passed
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/app/services/group_handler.py created
+  ✅ GroupHandler class with __init__ accepting repo_clone_dir
+  ✅ sync_user_groups() method updates all relevant group files for user's memberships
+  ✅ remove_user_from_group() method removes user from specified group
+  ✅ _load_all_groups() private method loads all identity_groups/*.yaml files
+  ✅ _find_group_file() method finds group by display name
+  ✅ _add_user_to_group() private method adds user to entraid_human_identities list
+  ✅ _create_group_file() private method creates new group file if needed
+  ✅ Returns list of modified file paths
+  ✅ Group files include entraid_human_identities array
+- Comprehensive testing completed with 5 test scenarios covering functionality, edge cases, and integration
+
+**Learnings:**
+- YAML file management patterns for identity groups:
+  - Use yaml.safe_load() for reading, yaml.dump() for writing
+  - Preserve field order with sort_keys=False
+  - Handle encoding properly with encoding='utf-8' and allow_unicode=True
+  - Include error handling for malformed YAML files
+- Group membership synchronization strategy:
+  - Calculate sets: groups_to_join = target - current, groups_to_leave = current - target
+  - Use set operations for efficient membership comparison
+  - Maintain sorted lists for consistency
+  - Support creating new groups on-demand when they don't exist
+- Group file structure for EntraID integration:
+  - entraid_human_identities array separate from human_identities
+  - Follows same pattern as existing ldap_human_identities
+  - Type 'internal' for SCIM-managed groups vs 'external' for LDAP
+  - Include default contact and empty sub-arrays for consistency
+- File path handling best practices:
+  - Use pathlib.Path for cross-platform compatibility
+  - Return relative paths from repo root for Git operations
+  - Validate directory existence in __init__ with clear error messages
+  - Use glob patterns for file discovery (*.yaml)
+- Group name sanitization for filenames:
+  - Lowercase + replace spaces with underscores
+  - Remove special characters: re.sub(r'[^a-z0-9_]', '', name)
+  - Clean consecutive underscores: re.sub(r'_+', '_', name)
+  - Fallback to 'unknown_group' for empty results
+  - Filename pattern: identity_group_{sanitized_name}.yaml
+- Error handling strategy:
+  - Continue processing other files when one fails to load
+  - Print warnings for non-critical errors (malformed YAML)
+  - Raise ValueError for critical issues (missing directories)
+  - Return empty lists for failed operations
+- Testing patterns for file-based services:
+  - Use tempfile.mkdtemp() for isolated test environments
+  - Create realistic sample data matching production structure
+  - Test both success and failure paths
+  - Clean up temporary files after tests
+  - Test integration scenarios with multiple operations
+- Story-15 creates the group management layer needed for Story-17 (main.py SCIM endpoints)
+- GroupHandler integrates with YAMLGenerator (Story-13) and UserStore (Story-14) for complete user provisioning
+- Next dependency: Story-16 (GitHandler) for Git operations and PR creation
+

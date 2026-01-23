@@ -232,7 +232,7 @@
         "Returns list of modified file paths",
         "Group files include entraid_human_identities array"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-16",

@@ -202,3 +202,19 @@ Story-25 (docs)
   - Handle FileNotFoundError and json.JSONDecodeError gracefully
 - Directory creation: Use `Path.mkdir(parents=True, exist_ok=True)`
 
+### YAML File Management for Identity Groups
+- YAML file operations use pathlib.Path for cross-platform compatibility
+- Read with `yaml.safe_load()`, write with `yaml.dump()` 
+- Preserve field order: `sort_keys=False` in yaml.dump()
+- Handle encoding: `encoding='utf-8'` and `allow_unicode=True`
+- Error handling: Continue processing on malformed YAML, print warnings
+- File discovery: Use `glob("*.yaml")` patterns with filtering
+- Return relative paths from repo root for Git operations
+- Group membership arrays: entraid_human_identities separate from human_identities
+- Set operations for efficient membership synchronization:
+  - `groups_to_join = target_groups - current_memberships`
+  - `groups_to_leave = current_memberships - target_groups`
+- Maintain sorted lists for consistency: `list.sort()` after modifications
+- Group file creation: Include all required fields (name, contact, type, arrays)
+- Name sanitization: lowercase, underscores, remove special chars, fallback defaults
+
