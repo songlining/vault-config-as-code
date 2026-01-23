@@ -28,7 +28,8 @@
         "hashicorp.terraform",
         "hashicorp.hcl",
         "ms-vscode.vscode-yaml",
-        "redhat.vscode-yaml"
+        "redhat.vscode-yaml",
+        "sst-dev.opencode"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
@@ -40,6 +41,8 @@
       }
     }
   },
+
+  "postCreateCommand": "curl -fsSL https://opencode.ai/install | bash",
 
   "containerEnv": {
     "SHELL": "/bin/zsh"
