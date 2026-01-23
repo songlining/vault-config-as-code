@@ -198,7 +198,7 @@
         "YAML output includes $schema reference to schema_entraid_human.yaml",
         "Metadata includes provisioned_via_scim: true"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-14",

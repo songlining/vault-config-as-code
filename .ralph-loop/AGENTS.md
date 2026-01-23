@@ -70,8 +70,26 @@ This file contains patterns, gotchas, and reusable solutions discovered during p
 ### YAML Generation
 - Use `yaml.dump()` with `default_flow_style=False` for readable output
 - Use `sort_keys=False` to preserve field order
+- Use `allow_unicode=True` to handle international characters
 - Include `$schema` reference at top of YAML files
 - Sanitize user input: lowercase, replace spaces with underscores, remove special chars
+- Field sanitization pattern:
+  - Convert to lowercase
+  - Replace spaces with underscores
+  - Remove special characters: `re.sub(r'[^a-z0-9_]', '', value)`
+  - Clean consecutive underscores: `re.sub(r'_+', '_', value)`
+  - Strip leading/trailing underscores: `value.strip("_")`
+  - Provide fallback default if result is empty
+- SCIM to YAML mapping:
+  - userName → authentication.oidc (email)
+  - displayName → identity.name
+  - emails[0].value → identity.email (primary email)
+  - title → identity.role (sanitized)
+  - department → identity.team (sanitized)
+  - id → metadata.entraid_object_id (UUID)
+  - active (bool) → identity.status ("active"/"deactivated")
+  - active (bool) → authentication.disabled (inverted)
+- Filename pattern: `entraid_human_{sanitized_name}.yaml`
 
 ### Git Operations
 - Use descriptive branch names: `scim-provision-{username}-{timestamp}`

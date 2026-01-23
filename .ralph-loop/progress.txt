@@ -626,3 +626,114 @@
 - This dependency will be used to protect all SCIM endpoints: POST/PATCH/DELETE/GET /scim/v2/Users
 - The verify_bearer_token function returns the token value, but most routes will use it via dependencies=[] decorator for implicit validation
 
+---
+
+### Iteration 13 - Story-13: Create YAML Generator Service
+
+**Date:** 2026-01-23
+
+**Completed:** Story-13 (Create YAML Generator Service)
+
+**What was done:**
+- Created scim-bridge/app/services/yaml_generator.py with YAMLGenerator class
+- Implemented __init__ method that accepts schema_path parameter
+- Implemented scim_to_yaml() method that converts SCIM dict to (filename, yaml_content) tuple
+- Implemented SCIM to YAML field mapping:
+  - userName → authentication.oidc (email for OIDC login)
+  - displayName → identity.name (full name)
+  - emails[0].value → identity.email (primary email from SCIM emails array)
+  - title → identity.role (job title, sanitized)
+  - department → identity.team (department, sanitized)
+  - id → metadata.entraid_object_id (EntraID UUID)
+  - userName → metadata.entraid_upn (User Principal Name)
+  - active (boolean) → identity.status ("active" or "deactivated")
+  - active (boolean) → authentication.disabled (inverted: true→false, false→true)
+- Implemented _sanitize_field() method for role and team sanitization:
+  - Converts to lowercase
+  - Replaces spaces with underscores
+  - Removes special characters (keeps only alphanumeric and underscores)
+  - Removes leading/trailing underscores
+  - Replaces multiple consecutive underscores with single underscore
+- Implemented _generate_filename() method for filename generation:
+  - Pattern: entraid_human_firstname_lastname.yaml
+  - Sanitizes display name (lowercase, underscores, no special chars)
+  - Handles special characters in names (e.g., "O'Brien-Smith" → "obriensmith")
+- YAML output structure includes:
+  - $schema reference to schema_entraid_human.yaml
+  - metadata.provisioned_via_scim: true (marks SCIM-provisioned users)
+  - metadata.version: "1.0.0" (semantic version)
+  - metadata.created_date: Current UTC date in YYYY-MM-DD format
+  - identity.status: "active" or "deactivated" based on SCIM active field
+  - authentication.disabled: Inverted SCIM active field (active=false → disabled=true)
+  - policies.identity_policies: Single policy based on role (e.g., "senior_engineer-policy")
+- Created scim-bridge/app/services/__init__.py for package initialization and exports
+- Used yaml.dump() with proper formatting options:
+  - default_flow_style=False for readable multi-line YAML
+  - sort_keys=False to preserve field order as defined in dict
+  - allow_unicode=True to handle international characters
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/app/services/yaml_generator.py created (221 lines)
+  ✅ YAMLGenerator class with __init__ accepting schema_path
+  ✅ scim_to_yaml() method converts SCIM dict to (filename, yaml_content) tuple
+  ✅ SCIM attributes correctly mapped: userName→oidc, displayName→name, emails→email, title→role, department→team, id→entraid_object_id
+  ✅ Filename generation: 'entraid_human_firstname_lastname.yaml' with sanitization
+  ✅ Role and team sanitization (lowercase, underscore separators)
+  ✅ Status mapped from active boolean (true→active, false→deactivated)
+  ✅ YAML output includes $schema reference to schema_entraid_human.yaml
+  ✅ Metadata includes provisioned_via_scim: true
+- Created comprehensive test script (test_yaml_gen.py) with 4 test cases:
+  - Test 1: Full SCIM user with all fields → Verified correct mapping
+  - Test 2: Deactivated user (active=false) → Verified status="deactivated", disabled=true
+  - Test 3: Special characters in name/title/department → Verified sanitization
+  - Test 4: Minimal user (missing optional fields) → Verified defaults (role="user", team="general")
+- All tests passed successfully
+
+**Learnings:**
+- YAML generation service design patterns:
+  - Use yaml.dump() with specific options for human-readable output
+  - default_flow_style=False creates multi-line YAML (not inline)
+  - sort_keys=False preserves dictionary insertion order (important for schema compliance)
+  - allow_unicode=True handles international characters in names
+- Field sanitization strategy for Vault policies:
+  - Convert to lowercase for consistency
+  - Replace spaces with underscores (required for policy names)
+  - Remove special characters using regex: re.sub(r'[^a-z0-9_]', '', value)
+  - Clean up consecutive underscores: re.sub(r'_+', '_', value)
+  - Strip leading/trailing underscores: value.strip("_")
+  - Provide fallback default if sanitized value is empty
+- SCIM to YAML mapping considerations:
+  - SCIM emails is an array of objects with value, type, primary fields
+  - Use emails[0].value for primary email, fallback to userName if emails missing
+  - SCIM active boolean maps to TWO fields in YAML:
+    - identity.status: "active" or "deactivated" (string)
+    - authentication.disabled: inverted boolean (active=false → disabled=true)
+  - This dual mapping supports both soft-delete and authentication control
+- Filename generation best practices:
+  - Use display name as source (more readable than email/UPN)
+  - Sanitize to ensure valid filesystem names (no special chars, no spaces)
+  - Handle edge cases: empty names, special characters, multiple spaces
+  - Prefix pattern: entraid_human_ allows filtering in data.tf locals
+- Default values for missing optional SCIM fields:
+  - title → role: "user" (generic user role)
+  - department → team: "general" (generic team)
+  - emails → email: fallback to userName (UPN)
+- YAML structure follows schema_entraid_human.yaml:
+  - Four main sections: metadata, identity, authentication, policies
+  - Schema reference ($schema) at top of file for validation
+  - provisioned_via_scim flag distinguishes SCIM users from manual entries
+- Policy generation pattern:
+  - Single policy based on sanitized role: "{role}-policy"
+  - Future enhancement: Could add team-based policies or group-based policies
+- UTC timestamp pattern:
+  - Use datetime.utcnow().strftime("%Y-%m-%d") for ISO 8601 date format
+  - Matches schema date format validation
+- Error handling approach:
+  - Use .get() with defaults for optional SCIM fields
+  - Ensures generator doesn't fail on minimal SCIM payloads
+  - Provides sensible defaults for missing data
+- Story-13 creates the core transformation logic needed for Story-17 (main.py)
+- The YAMLGenerator will be used by the SCIM endpoints to convert incoming SCIM payloads into YAML files
+- Next dependencies: Story-14 (UserStore) for ID mapping, Story-16 (GitHandler) for PR creation
+
