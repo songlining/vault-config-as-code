@@ -304,11 +304,11 @@
         "Port 8000 exposed",
         "Uvicorn command to run app on 0.0.0.0:8000",
         "Image builds successfully with docker build"
-      ],
-      "passes": false
-    },
-    {
-      "id": "Story-20",
+       ],
+       "passes": true
+     },
+     {
+       "id": "Story-20",
       "title": "Create SCIM Bridge Requirements File",
       "description": "Create scim-bridge/requirements.txt with all Python dependencies for the SCIM Bridge application",
       "acceptance_criteria": [

@@ -1037,3 +1037,82 @@
 - The configuration module will be imported by main.py (Story-17) and other services for centralized settings management
 - This pattern enables environment-specific configuration while maintaining type safety and validation
 
+
+---
+
+### Iteration 18 - Story-19: Create SCIM Bridge Dockerfile
+
+**Date:** 2026-01-23
+
+**Completed:** Story-19 (Create SCIM Bridge Dockerfile)
+
+**What was done:**
+- Created scim-bridge/Dockerfile with comprehensive containerization for the FastAPI SCIM Bridge application (49 lines)
+- Used python:3.11-slim as base image for smaller footprint and security
+- Installed system dependencies including git and curl via apt-get with proper cleanup
+- Configured working directory as /app and created /data directory for persistent storage
+- Implemented proper Docker layer caching by copying requirements.txt first before application code
+- Created requirements.txt file with all necessary dependencies:
+  - fastapi==0.109.0 (web framework)
+  - uvicorn[standard]==0.27.0 (ASGI server with extras)
+  - pydantic==2.5.0 (data validation)
+  - pyyaml==6.0.1 (YAML processing)
+  - jsonschema==4.20.0 (schema validation)
+  - requests==2.31.0 (HTTP requests)
+  - python-multipart==0.0.6 (form data parsing)
+- Created non-root user 'appuser' for security and set proper ownership of /app and /data
+- Exposed port 8000 and configured uvicorn command to bind to 0.0.0.0:8000
+- Added health check using curl to test /health endpoint
+- Set default environment variables (REPO_CLONE_DIR, USER_MAPPING_FILE, LOG_LEVEL)
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/Dockerfile created
+  ✅ Base image: python:3.11-slim
+  ✅ Git installed via apt-get (verified with docker run which git)
+  ✅ Working directory set to /app (verified with docker run pwd)
+  ✅ Requirements.txt copied and installed (verified dependencies installed)
+  ✅ Application code copied to /app (verified with docker run ls -la)
+  ✅ Data directory /data created (verified with docker run ls -la /data)
+  ✅ Port 8000 exposed (verified with docker inspect)
+  ✅ Uvicorn command to run app on 0.0.0.0:8000 (verified with docker inspect)
+  ✅ Image builds successfully with docker build (completed in ~25 seconds)
+- Comprehensive testing confirmed all requirements met
+
+**Learnings:**
+- Docker best practices for Python applications:
+  - Use slim base images for smaller footprint and faster builds
+  - Install system dependencies first with apt-get update && install && clean in single RUN layer
+  - Use --no-install-recommends to minimize package installations
+  - Clean apt cache with rm -rf /var/lib/apt/lists/* to reduce image size
+  - Copy requirements.txt before application code for better layer caching
+  - Use --no-cache-dir with pip to avoid storing cache in image layers
+- Security patterns for containerization:
+  - Create non-root user for application execution
+  - Set proper ownership with chown -R user:user for application directories
+  - Use USER directive to switch to non-privileged user before CMD
+  - Avoid running applications as root inside containers
+- Docker layer optimization strategies:
+  - Copy dependency files (requirements.txt) before application code
+  - Combine related commands in single RUN instructions
+  - Order operations from least likely to change (dependencies) to most likely (application code)
+  - This enables Docker to cache dependency layers when only application code changes
+- Health check configuration:
+  - Use curl -f for health checks with proper failure codes
+  - Set reasonable intervals (30s), timeouts (10s), and retries (3)
+  - Include start-period for applications that need initialization time
+  - Health checks enable container orchestration to determine service readiness
+- Dependencies management:
+  - Pin all dependency versions for reproducibility (critical for production)
+  - Include uvicorn[standard] for production-ready ASGI server with HTTP/HTTPS support
+  - Separate core dependencies (fastapi, pydantic) from utility dependencies (requests, pyyaml)
+  - Use compatible version ranges when pinning (==) for security and stability
+- Directory structure and permissions:
+  - Create /data for persistent storage outside /app (enables volume mounts)
+  - Set proper ownership for both application and data directories
+  - Use mkdir -p for creating directory structure
+  - Separate application code (/app) from mutable data (/data)
+- Story-19 completes the containerization foundation for Story-20 (requirements update) and Story-22 (docker-compose integration)
+- The Dockerfile enables local development, testing, and production deployment of the SCIM Bridge service
+- This pattern follows industry standards for Python microservice containerization with FastAPI
+

@@ -250,3 +250,13 @@ Story-25 (docs)
   - API requests: Use `response.raise_for_status()` for HTTP errors
   - Continue on non-critical errors (e.g., label application failures)
 
+
+### Docker Configuration
+- Use slim base images (python:3.11-slim) for smaller footprint and faster builds
+- Install system dependencies with single RUN layer: apt-get update && install && clean && rm -rf /var/lib/apt/lists/*
+- Copy requirements.txt before application code for better Docker layer caching
+- Create non-root user for security: useradd --create-home --shell /bin/bash appuser
+- Set proper ownership with chown -R user:user for application directories
+- Use health checks with curl for container orchestration readiness
+- Pin all dependency versions for reproducibility (critical for production)
+- Separate application code (/app) from persistent data (/data) directories
