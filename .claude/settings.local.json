@@ -30,7 +30,16 @@
       "Bash(vault delete:*)",
       "Bash(vault secrets list:*)",
       "Bash(vault write:*)",
-      "Bash(terraform state rm:*)"
+      "Bash(terraform state rm:*)",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(python3:*)",
+      "Bash(curl:*)",
+      "Bash(jq:*)",
+      "Bash(cd:*)",
+      "Bash(mkdir:*)",
+      "Bash(pytest:*)"
     ],
     "deny": [],
     "ask": []

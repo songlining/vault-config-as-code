@@ -214,7 +214,7 @@
         "Data persisted to JSON file",
         "File locking or atomic writes for concurrent safety"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-15",

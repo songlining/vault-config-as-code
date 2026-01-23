@@ -737,3 +737,31 @@
 - The YAMLGenerator will be used by the SCIM endpoints to convert incoming SCIM payloads into YAML files
 - Next dependencies: Story-14 (UserStore) for ID mapping, Story-16 (GitHandler) for PR creation
 
+
+---
+
+### Iteration 14 - Story-14: Create User Store Service
+
+**Date:** 2026-01-23
+
+**Completed:** Story-14 (Create User Store Service)
+
+**What was done:**
+- Created scim-bridge/app/services/user_store.py with UserStore class (219 lines)
+- Implemented thread-safe CRUD operations with threading.Lock
+- Implemented atomic writes using temp file + rename pattern
+- Added bonus methods: user_exists, get_user_by_name, get_user_by_filename
+- Updated scim-bridge/app/services/__init__.py to export UserStore
+- Created comprehensive test suite with 6 test cases - all passed
+
+**Verification:**
+- All acceptance criteria verified
+- Thread safety verified with 50 concurrent user additions
+
+**Learnings:**
+- Atomic write pattern: Write to temp file, then atomic rename for data integrity
+- Thread safety: Use threading.Lock with context manager for all operations
+- JSON persistence: Use indent=2, ensure_ascii=False, encoding=utf-8
+- UserStore maintains SCIM ID to Vault identity mapping for PATCH/DELETE/GET operations
+- Story-14 completes user mapping persistence for Story-17 (main.py)
+

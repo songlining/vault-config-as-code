@@ -185,3 +185,20 @@ Story-25 (docs)
 
 ### Iteration 1
 - Notes will be added as iterations complete
+
+### Data Persistence and Thread Safety
+- Use threading.Lock for thread-safe operations in Python classes
+- Acquire lock using `with self._lock:` context manager for automatic release
+- Lock protects both reads and writes to prevent race conditions
+- Atomic write pattern for file-based persistence:
+  - Write to temporary file first: `temp_file = path.with_suffix(".tmp")`
+  - Write data to temp file completely
+  - Use atomic rename: `temp_file.replace(original_file)`
+  - On POSIX, rename is atomic and prevents partial file reads
+- JSON persistence best practices:
+  - Use `indent=2` for human-readable output
+  - Use `ensure_ascii=False` to preserve Unicode characters
+  - Use `encoding="utf-8"` for all file operations
+  - Handle FileNotFoundError and json.JSONDecodeError gracefully
+- Directory creation: Use `Path.mkdir(parents=True, exist_ok=True)`
+
