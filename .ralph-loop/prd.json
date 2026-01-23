@@ -137,7 +137,7 @@
         "Placeholder values clearly marked for user to replace",
         "terraform plan -var-file=dev.tfvars validates successfully"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-10",

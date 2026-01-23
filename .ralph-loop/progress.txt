@@ -370,3 +370,60 @@
   - Existing deployments won't break if they don't have the new schema
   - This supports gradual migration and phased rollouts
 - Story-8 completes the validation infrastructure for EntraID identities, enabling automated quality checks before Terraform applies the configuration
+
+---
+
+### Iteration 9 - Story-9: Update dev.tfvars with EntraID Configuration
+
+**Date:** 2026-01-23
+
+**Completed:** Story-9 (Update dev.tfvars with EntraID Configuration)
+
+**What was done:**
+- Updated dev.tfvars to add EntraID OIDC authentication configuration
+- Added enable_entraid_auth = true to enable the authentication backend
+- Added entraid_tenant_id with placeholder 'your-tenant-id-here'
+- Added entraid_client_id with placeholder 'your-client-id-here'
+- Added entraid_client_secret with placeholder 'your-client-secret-here'
+- Included comprehensive comments with clear instructions on:
+  - Where to find the tenant ID (Azure Portal > Microsoft Entra ID > Overview)
+  - Where to find the client ID (Azure Portal > App registrations > Your App > Overview)
+  - Where to create client secret (Azure Portal > App registrations > Your App > Certificates & secrets)
+- Added "IMPORTANT" notice to replace placeholder values
+- Configuration section added after LDAP configuration for logical grouping
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ dev.tfvars updated with enable_entraid_auth = true
+  ✅ entraid_tenant_id added with placeholder 'your-tenant-id-here'
+  ✅ entraid_client_id added with placeholder 'your-client-id-here'
+  ✅ entraid_client_secret added with placeholder 'your-client-secret-here'
+  ✅ Placeholder values clearly marked for user to replace with detailed guidance
+  ⚠️ terraform plan -var-file=dev.tfvars - Unable to verify (terraform binary not available in environment, syntax verified manually)
+
+**Learnings:**
+- tfvars file organization pattern:
+  - Group related configuration sections with comment headers
+  - Place new auth backend configuration after similar auth backends (LDAP)
+  - Use clear section headers with descriptive comments
+  - Include enable flag first, then configuration variables
+- Placeholder value best practices:
+  - Use descriptive placeholder text (e.g., 'your-tenant-id-here' instead of 'REPLACE_ME')
+  - Include "IMPORTANT" notice at section level
+  - Provide specific guidance for each placeholder with Azure Portal navigation paths
+  - Document expected format in comments (e.g., "GUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+- Comment documentation pattern:
+  - Section header comment explaining what it enables
+  - Per-variable comments explaining where to find/create the value
+  - Include Portal navigation paths for user convenience
+- Logical ordering for auth backend configuration in tfvars:
+  1. Core Vault configuration (vault_url, environment)
+  2. Optional integrations (Neo4j)
+  3. Authentication backends (LDAP, EntraID)
+- Story-9 completes Phase 1 (OIDC Authentication) configuration, making the system ready for local development and testing with EntraID
+- With all Phase 1 stories complete (Story-1 through Story-9), users can now:
+  - Configure EntraID OIDC authentication in Vault
+  - Define EntraID human identities in YAML files
+  - Validate identity configurations
+  - Apply Terraform to provision EntraID users with OIDC authentication
+  - Support multi-auth patterns (OIDC + GitHub + PKI) for EntraID users

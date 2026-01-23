@@ -11,3 +11,23 @@ enable_neo4j_integration = false
 # neo4j_url      = "bolt://localhost:7687"
 # neo4j_username = "neo4j"
 # neo4j_password = "vaultgraph123"
+
+# EntraID (Microsoft Entra ID) OIDC Authentication Backend (Optional)
+# Set to true to enable EntraID OIDC authentication
+# IMPORTANT: Replace placeholder values below with your actual EntraID configuration
+enable_entraid_auth = false
+
+# EntraID Tenant Configuration (only needed if enable_entraid_auth = true)
+# Replace 'your-tenant-id-here' with your Azure AD tenant ID (GUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+# You can find this in Azure Portal > Microsoft Entra ID > Overview > Tenant ID
+# entraid_tenant_id = "your-tenant-id-here"
+
+# EntraID Application Registration (only needed if enable_entraid_auth = true)
+# Replace 'your-client-id-here' with your app registration's Application (client) ID
+# You can find this in Azure Portal > App registrations > Your App > Overview
+# entraid_client_id = "your-client-id-here"
+
+# EntraID Application Secret (only needed if enable_entraid_auth = true)
+# Replace 'your-client-secret-here' with your app registration's client secret value
+# You can create this in Azure Portal > App registrations > Your App > Certificates & secrets
+# entraid_client_secret = "your-client-secret-here"
