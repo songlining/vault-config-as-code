@@ -1250,3 +1250,82 @@
 - This completes the configuration foundation needed for Story-22 (docker-compose) environment variable integration
 
 ---
+
+### Iteration 17 - Story-22: Update docker-compose.yml for SCIM Bridge
+
+**Date:** 2026-01-23
+
+**Completed:** Story-22 (Update docker-compose.yml for SCIM Bridge)
+
+**What was done:**
+- Updated docker-compose.yml to add scim-bridge service after openldap service
+- Configured build context with `./scim-bridge` for proper Docker build context
+- Set container name to `scim-bridge` for easy identification
+- Configured port mapping `8080:8000` (external:internal) to expose SCIM API
+- Added environment variables with default values using `${VAR:-default}` syntax:
+  - SCIM_BEARER_TOKEN: `${SCIM_BEARER_TOKEN:-change-me-in-production}`
+  - GIT_REPO_URL: `${GIT_REPO_URL:-https://github.com/your-org/vault-config-as-code.git}`
+  - GITHUB_TOKEN: `${GITHUB_TOKEN:-your-github-token-here}`
+  - LOG_LEVEL: `${LOG_LEVEL:-INFO}`
+  - REPO_CLONE_DIR: "/data/repo" (internal container path)
+  - USER_MAPPING_FILE: "/data/user_mapping.json" (internal container path)
+- Added volumes for persistent data:
+  - scim-data:/data (persistent storage for repo clones and user mappings)
+  - scim-logs:/app/logs (log file persistence)
+- Connected service to vault-network for inter-service communication
+- Added `depends_on: vault` to ensure Vault starts before SCIM bridge
+- Configured health check using curl to test /health endpoint:
+  - Test command: `["CMD", "curl", "-f", "http://localhost:8000/health"]`
+  - Interval: 10s, Timeout: 5s, Retries: 5 (matches pattern from neo4j service)
+- Added scim-data and scim-logs volumes to volumes section with local driver
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ docker-compose.yml updated with scim-bridge service
+  ✅ Build context set to ./scim-bridge
+  ✅ Container name set to scim-bridge
+  ✅ Port mapping 8080:8000
+  ✅ Environment variables for SCIM_BEARER_TOKEN, GIT_REPO_URL, GITHUB_TOKEN, LOG_LEVEL
+  ✅ Volumes for scim-data and scim-logs
+  ✅ Network connected to vault-network
+  ✅ Depends_on vault service
+  ✅ Health check configured with curl test
+  ✅ scim-data and scim-logs volumes added to volumes section
+  ✅ docker compose config validates successfully
+- `docker compose config` command executed successfully with only warning about obsolete version field
+
+**Learnings:**
+- Docker Compose service configuration patterns:
+  - Use `build.context` instead of `build: .` for clarity when specifying build directory
+  - Environment variable syntax `${VAR:-default}` provides fallback defaults for development
+  - Volume mapping pattern: `named-volume:/container/path` for persistent data
+  - Health checks follow standard pattern across services (10s interval, 5s timeout, 5 retries)
+- Service dependencies and networking:
+  - `depends_on` ensures service startup order but doesn't wait for readiness (use health checks for that)
+  - All services connect to same `vault-network` for inter-service communication
+  - Container names enable easy service reference in logs and networking
+- Port mapping strategy:
+  - External port 8080 avoids conflicts with Vault (8200) and Neo4j (7474, 7687)
+  - Internal port 8000 matches FastAPI/Uvicorn default from Dockerfile
+- Volume organization:
+  - Separate data volume for persistent application data (repos, user mappings)
+  - Separate logs volume for log file persistence and debugging
+  - Volume names follow pattern: `{service}-{purpose}` (e.g., scim-data, scim-logs)
+- Environment variable best practices:
+  - Use placeholder values for sensitive data (tokens, secrets)
+  - Provide sensible defaults for configuration values (LOG_LEVEL=INFO)
+  - Use descriptive placeholder URLs that indicate expected format
+  - Internal container paths should be consistent across environment and volume config
+- Health check configuration:
+  - Use curl to test HTTP endpoints for readiness
+  - Health endpoint should be simple and not depend on external services
+  - Health check intervals should be reasonable for development (10s not too aggressive)
+- Docker Compose validation:
+  - `docker compose config` validates syntax and shows resolved configuration
+  - Version field is obsolete in newer Docker Compose but doesn't break functionality
+  - Validation shows expanded configuration with resolved environment variables
+- Story-22 completes the Docker infrastructure for SCIM Bridge deployment
+- The SCIM bridge can now be started with `docker compose up -d scim-bridge`
+- With Story-22 complete, the SCIM Bridge is ready for integration testing alongside Vault and other services
+
+---

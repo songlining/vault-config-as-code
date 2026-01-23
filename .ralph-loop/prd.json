@@ -356,9 +356,9 @@
         "Depends_on vault service",
         "Health check configured with curl test",
         "scim-data and scim-logs volumes added to volumes section",
-        "docker compose config validates successfully"
-      ],
-      "passes": false
+         "docker compose config validates successfully"
+       ],
+       "passes": true
     },
     {
       "id": "Story-23",
