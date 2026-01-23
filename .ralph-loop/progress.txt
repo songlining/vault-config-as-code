@@ -1188,3 +1188,65 @@
 - This enables the next steps: Story-21 (.env.example), Story-22 (docker-compose), and testing
 - The requirements.txt works with the existing Dockerfile (Story-19) and will be consumed by docker-compose (Story-22)
 
+
+---
+
+### Iteration 17 - Story-21: Create SCIM Bridge Environment Example
+
+**Date:** 2026-01-23
+
+**Completed:** Story-21 (Create SCIM Bridge Environment Example)
+
+**What was done:**
+- Created scim-bridge/.env.example with comprehensive environment variable configuration
+- Included all required variables: SCIM_BEARER_TOKEN, GIT_REPO_URL, GITHUB_TOKEN, LOG_LEVEL, REPO_CLONE_DIR, USER_MAPPING_FILE
+- Added descriptive comments for each variable explaining purpose, usage, and examples
+- Included security guidance (bearer token must be strong/random)
+- Provided GitHub token creation instructions with required permissions
+- Added examples for both HTTPS and SSH Git repository formats
+- Included optional bonus variables: SCHEMA_PATH, COMMIT_PREFIX, BRANCH_PREFIX for customization
+- File serves as template for users to create their actual .env file
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/.env.example created
+  ✅ SCIM_BEARER_TOKEN with example value "your-secure-bearer-token-here" and description
+  ✅ GIT_REPO_URL with example "https://github.com/your-org/vault-config-as-code.git"
+  ✅ GITHUB_TOKEN with placeholder "your-github-token-here" and creation instructions
+  ✅ LOG_LEVEL with default 'INFO' and supported levels listed
+  ✅ REPO_CLONE_DIR with default '/data/repo' and usage description
+  ✅ USER_MAPPING_FILE with default '/data/user_mapping.json' and purpose explanation
+  ✅ All variables have descriptive comments with detailed explanations
+
+**Learnings:**
+- Environment file documentation best practices:
+  - Start with file header explaining purpose and usage (copy to .env)
+  - Group related variables with section headers (SCIM Authentication, Git Repository Configuration, etc.)
+  - Each variable should have comments explaining: purpose, usage, examples, and where to find/create values
+  - Use descriptive placeholder values instead of generic ones ("your-secure-bearer-token-here" vs "CHANGEME")
+  - Include security considerations in comments (strong tokens, permission requirements)
+  - Provide specific guidance for external services (GitHub token creation URL and permissions)
+- Environment variable naming conventions:
+  - Use UPPERCASE with underscores for environment variables
+  - Group by prefix (SCIM_, GIT_, GITHUB_ for logical organization)
+  - Use clear, descriptive names that indicate purpose and type
+- Configuration file organization pattern:
+  - Required variables first, optional variables at end
+  - Default values should be production-ready where possible
+  - File paths should follow container conventions (/data/* for persistent storage)
+  - Include both absolute and relative path options in comments
+- Documentation patterns for DevOps tools:
+  - Link to external documentation (GitHub token creation)
+  - Explain permission requirements for external integrations
+  - Provide multiple format examples (HTTPS vs SSH for Git URLs)
+  - Include troubleshooting hints in comments
+- Integration with existing tooling:
+  - Variable names match those used in config.py (Story-18)
+  - File paths align with Docker volume mounts from docker-compose (Story-22)
+  - Log levels match standard Python logging levels
+  - Default values work with containerized deployment
+- Story-21 provides the configuration template needed for local development and production deployment
+- The .env.example serves as documentation and template for users setting up the SCIM Bridge
+- This completes the configuration foundation needed for Story-22 (docker-compose) environment variable integration
+
+---

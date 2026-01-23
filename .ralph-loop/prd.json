@@ -339,7 +339,7 @@
         "USER_MAPPING_FILE with default '/data/user_mapping.json'",
         "All variables have descriptive comments"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-22",
