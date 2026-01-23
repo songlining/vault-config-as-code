@@ -123,7 +123,7 @@
         "Script successfully validates entraid_human_example.yaml",
         "Error handling for missing optional schemas"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-9",

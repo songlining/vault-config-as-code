@@ -52,69 +52,108 @@ class IdentityValidator:
     def load_schemas(self) -> bool:
         """
         Load all schema files from the identities directory.
-        
+
         Returns:
             True if schemas loaded successfully, False otherwise
         """
-        schema_files = {
+        # Required schemas - must exist
+        required_schema_files = {
             'application': self.identities_dir / 'schema_application.yaml',
             'human': self.identities_dir / 'schema_human.yaml'
         }
-        
-        for schema_type, schema_path in schema_files.items():
+
+        # Optional schemas - may not exist
+        optional_schema_files = {
+            'entraid_human': self.identities_dir / 'schema_entraid_human.yaml',
+            'ldap_human': self.identities_dir / 'schema_ldap_human.yaml'
+        }
+
+        # Load required schemas
+        for schema_type, schema_path in required_schema_files.items():
             if not schema_path.exists():
-                self.errors.append(f"Schema file not found: {schema_path}")
+                self.errors.append(f"Required schema file not found: {schema_path}")
                 return False
-                
-            try:
-                # Use yq to convert YAML to JSON
-                result = subprocess.run(
-                    ['yq', 'eval', '-o=json', str(schema_path)],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                schema_data = json.loads(result.stdout)
-                
-                # Validate that the schema itself is valid
-                try:
-                    import jsonschema
-                    jsonschema.Draft7Validator.check_schema(schema_data)
-                except ImportError:
-                    pass  # Skip schema validation if jsonschema not available
-                    
-                self.schemas[schema_type] = schema_data
-                print(f"✓ Loaded {schema_type} schema: {schema_path}")
-            except subprocess.CalledProcessError as e:
-                self.errors.append(f"Error parsing schema {schema_path}: {e.stderr}")
+
+            if not self._load_schema_file(schema_type, schema_path):
                 return False
-            except json.JSONDecodeError as e:
-                self.errors.append(f"JSON decode error for schema {schema_path}: {e}")
-                return False
-            except Exception as e:
-                self.errors.append(f"Error loading schema {schema_path}: {e}")
-                return False
-                
+
+        # Load optional schemas
+        for schema_type, schema_path in optional_schema_files.items():
+            if schema_path.exists():
+                if not self._load_schema_file(schema_type, schema_path):
+                    return False
+            else:
+                print(f"ℹ️  Optional schema not found (skipping): {schema_path}")
+
         return True
+
+    def _load_schema_file(self, schema_type: str, schema_path: Path) -> bool:
+        """
+        Load a single schema file.
+
+        Args:
+            schema_type: Type identifier for the schema
+            schema_path: Path to the schema file
+
+        Returns:
+            True if loaded successfully, False otherwise
+        """
+        try:
+            # Use yq to convert YAML to JSON
+            result = subprocess.run(
+                ['yq', 'eval', '-o=json', str(schema_path)],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            schema_data = json.loads(result.stdout)
+
+            # Validate that the schema itself is valid
+            try:
+                import jsonschema
+                jsonschema.Draft7Validator.check_schema(schema_data)
+            except ImportError:
+                pass  # Skip schema validation if jsonschema not available
+
+            self.schemas[schema_type] = schema_data
+            print(f"✓ Loaded {schema_type} schema: {schema_path}")
+            return True
+        except subprocess.CalledProcessError as e:
+            self.errors.append(f"Error parsing schema {schema_path}: {e.stderr}")
+            return False
+        except json.JSONDecodeError as e:
+            self.errors.append(f"JSON decode error for schema {schema_path}: {e}")
+            return False
+        except Exception as e:
+            self.errors.append(f"Error loading schema {schema_path}: {e}")
+            return False
     
     def determine_schema_type(self, file_path: Path) -> Optional[str]:
         """
         Determine which schema to use based on the filename.
-        
+
         Args:
             file_path: Path to the YAML file
-            
+
         Returns:
-            Schema type ('application' or 'human') or None if undetermined
+            Schema type ('entraid_human', 'ldap_human', 'application', or 'human') or None if undetermined
         """
         filename = file_path.name.lower()
-        
-        if filename.startswith('application_'):
+
+        # Skip schema files
+        if filename.startswith('schema_'):
+            return None
+
+        # Check for specific identity types first (most specific to least specific)
+        # EntraID human identities must be checked FIRST before ldap_human and human
+        if filename.startswith('entraid_human_'):
+            return 'entraid_human'
+        elif filename.startswith('ldap_human_'):
+            return 'ldap_human'
+        elif filename.startswith('application_'):
             return 'application'
         elif filename.startswith('human_'):
             return 'human'
-        elif filename.startswith('schema_'):
-            return None  # Skip schema files
         else:
             self.warnings.append(f"Cannot determine schema type for file: {file_path}")
             return None
@@ -122,19 +161,25 @@ class IdentityValidator:
     def validate_file(self, file_path: Path) -> Tuple[bool, List[str]]:
         """
         Validate a single YAML file against its schema.
-        
+
         Args:
             file_path: Path to the YAML file to validate
-            
+
         Returns:
             Tuple of (is_valid, list_of_errors)
         """
         schema_type = self.determine_schema_type(file_path)
         if not schema_type:
             return True, []  # Skip files we can't determine schema for
-            
+
         if schema_type not in self.schemas:
-            return False, [f"No schema available for type: {schema_type}"]
+            # Check if this is an optional schema type
+            optional_schema_types = ['entraid_human', 'ldap_human']
+            if schema_type in optional_schema_types:
+                self.warnings.append(f"Skipping {file_path.name}: Optional schema '{schema_type}' not available")
+                return True, []  # Skip validation for files with missing optional schemas
+            else:
+                return False, [f"No schema available for type: {schema_type}"]
         
         try:
             # Load and parse the YAML file using yq

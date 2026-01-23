@@ -314,3 +314,59 @@
 - The disabled field is set to false to show enabled authentication
 - provisioned_via_scim set to false demonstrates manually created identity (SCIM bridge would set this to true)
 - Story-7 creates the reference example needed for users and for Story-8 validation testing
+
+---
+
+### Iteration 8 - Story-8: Update validate_identities.py for EntraID Support
+
+**Date:** 2026-01-23
+
+**Completed:** Story-8 (Update validate_identities.py for EntraID Support)
+
+**What was done:**
+- Refactored load_schemas() method to distinguish between required and optional schemas
+- Created _load_schema_file() helper method to eliminate code duplication in schema loading
+- Added entraid_human and ldap_human as optional schemas (they don't need to exist for validation to pass)
+- Required schemas (application, human) must exist or validation fails
+- Updated determine_schema_type() to check for 'entraid_human_' prefix FIRST before checking ldap_human and human
+- This ordering is critical because 'entraid_human_' is more specific than 'human_'
+- Added error handling in validate_file() for missing optional schemas
+- When optional schema is missing, the file is skipped with a warning instead of failing validation
+- Installed yq (YAML processor) required by the validation script
+- Installed pyyaml and jsonschema Python packages for full validation mode
+- Successfully validated entraid_human_example.yaml against schema_entraid_human.yaml
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ validate_identities.py load_schemas() method updated to include entraid_human schema
+  ✅ entraid_human schema treated as optional (like ldap_human)
+  ✅ determine_schema_type() method checks for 'entraid_human_' prefix FIRST (before ldap_human and human)
+  ✅ Method returns 'entraid_human' for files starting with 'entraid_human_'
+  ✅ Script successfully validates entraid_human_example.yaml
+  ✅ Error handling for missing optional schemas
+
+**Learnings:**
+- Python validation script design pattern:
+  - Separate required vs optional schemas in load_schemas()
+  - Use dictionaries to organize schema types and paths
+  - Extract common loading logic into helper methods (_load_schema_file)
+  - Handle missing optional schemas gracefully with warnings, not errors
+- File type detection ordering is critical:
+  - Check most specific patterns first (entraid_human_)
+  - Then check less specific patterns (ldap_human_, human_)
+  - Use early returns to avoid unnecessary checks
+  - Skip schema_ prefix files entirely
+- Optional schema handling strategy:
+  - Define list of optional_schema_types in validate_file()
+  - Check if schema_type is in optional list before failing
+  - Return (True, []) with warning for missing optional schemas
+  - This allows files to exist without their schemas being present
+- Schema validation modes:
+  - Fallback mode (yq only): Basic YAML parsing and required section checks
+  - Full mode (yq + pyyaml + jsonschema): Complete JSON Schema validation
+  - Both modes work, but full mode provides detailed validation error messages
+- The validation script pattern allows incremental schema adoption:
+  - New identity types can be added as optional schemas
+  - Existing deployments won't break if they don't have the new schema
+  - This supports gradual migration and phased rollouts
+- Story-8 completes the validation infrastructure for EntraID identities, enabling automated quality checks before Terraform applies the configuration
