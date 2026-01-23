@@ -374,10 +374,10 @@
         "Test for user creation endpoint",
         "Test for user update endpoint",
         "Test for user deactivation endpoint",
-        "Tests use pytest and mock services appropriately",
-        "All tests pass with pytest"
-      ],
-      "passes": false
+         "Tests use pytest and mock services appropriately",
+         "All tests pass with pytest"
+       ],
+       "passes": true
     },
     {
       "id": "Story-24",

@@ -125,7 +125,7 @@ class GroupHandler:
         
         return []
     
-    def _load_all_groups(self) -> Dict[str, Dict[str, Any]]:
+    def _load_all_groups(self) -> Dict[Path, Dict[str, Any]]:
         """
         Load all identity_groups/*.yaml files.
         
@@ -315,3 +315,49 @@ class GroupHandler:
             sanitized = 'unknown_group'
         
         return sanitized
+    
+    def remove_user_from_all_groups(self, user_name: str) -> List[str]:
+        """
+        Remove user from all groups they are currently a member of.
+        
+        This method is used for user deactivation/deletion to clean up
+        group memberships across all identity groups.
+        
+        Args:
+            user_name: Display name of user to remove from all groups
+        
+        Returns:
+            List of modified file paths (relative to repo root)
+        """
+        modified_files = []
+        
+        try:
+            # Load all group files
+            groups_data = self._load_all_groups()
+            
+            # Check each group for the user and remove if found
+            for file_path, data in groups_data.items():
+                entraid_identities = data.get('entraid_human_identities', [])
+                
+                # Check if user is in this group
+                if user_name in entraid_identities:
+                    # Remove user from the list
+                    entraid_identities.remove(user_name)
+                    entraid_identities.sort()  # Keep list sorted
+                    data['entraid_human_identities'] = entraid_identities
+                    
+                    # Write back to file
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+                    
+                    # Add to modified files list (relative path from repo root)
+                    relative_path = file_path.relative_to(self.repo_clone_dir)
+                    modified_files.append(str(relative_path))
+                    
+                    group_name = data.get('name', 'unknown')
+                    print(f"Removed user {user_name} from group {group_name}")
+        
+        except Exception as e:
+            print(f"Error removing user {user_name} from all groups: {e}")
+        
+        return modified_files
