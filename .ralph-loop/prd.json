@@ -65,7 +65,7 @@
         "All locals use try() for safe access to optional fields",
         "terraform validate passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-5",

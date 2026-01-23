@@ -117,3 +117,50 @@
   - PKI: `vault_auth_backend.cert.accessor` (no index, always enabled)
 - SPIFFE ID namespace pattern for EntraID: `spiffe://vault/entraid/human/{role}/{team}/{name}`
 - Story dependency note: Story-3 references locals that will be created in Story-4 (entraid_human_identities_map, entraid_human_with_oidc, entraid_human_with_github, entraid_human_with_pki)
+
+---
+
+### Iteration 4 - Story-4: Update data.tf with EntraID Identity Parsing
+
+**Date:** 2026-01-23
+
+**Completed:** Story-4 (Update data.tf with EntraID Identity Parsing)
+
+**What was done:**
+- Updated `data.tf` with EntraID human identity parsing locals after line 150
+- Added `entraid_human_identities_map` local that filters identity files starting with 'entraid_human_':
+  - Uses `startswith(filename, "entraid_human_")` to filter files
+  - Keys by `config.identity.name`
+  - Follows same pattern as `ldap_human_identities_map`
+- Added `entraid_human_with_oidc` local that filters identities with valid OIDC auth:
+  - Checks `try(v.authentication.oidc, null) != null && v.authentication.oidc != ""`
+  - Excludes disabled users: `!try(v.authentication.disabled, false)`
+  - Excludes deactivated users: `try(v.identity.status, "active") != "deactivated"`
+  - This comprehensive filtering ensures only active, enabled users with valid OIDC config are included
+- Added `entraid_human_with_github` local that filters identities with GitHub auth configured:
+  - Checks `try(v.authentication.github, null) != null && v.authentication.github != ""`
+- Added `entraid_human_with_pki` local that filters identities with PKI auth configured:
+  - Checks `try(v.authentication.pki, null) != null && v.authentication.pki != ""`
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ data.tf updated after line 150 (added at line 151)
+  ✅ entraid_human_identities_map local filters files starting with 'entraid_human_'
+  ✅ entraid_human_with_oidc local filters identities with valid oidc auth and not disabled
+  ✅ entraid_human_with_github local filters identities with github auth configured
+  ✅ entraid_human_with_pki local filters identities with pki auth configured
+  ✅ All locals use try() for safe access to optional fields
+  ✅ terraform validate - Syntax verified manually (terraform binary not available in environment)
+
+**Learnings:**
+- `data.tf` locals follow a consistent pattern:
+  - First define the main identity map filtered by filename prefix
+  - Then define filtered maps for specific authentication methods
+- The `entraid_human_with_oidc` local includes additional filtering logic compared to `ldap_human_with_ldap`:
+  - Must check `!try(v.authentication.disabled, false)` - respects the disabled flag
+  - Must check `try(v.identity.status, "active") != "deactivated"` - respects deactivated status
+  - This matches the disabled logic in `entraid_identities.tf` resource
+- Multi-auth filtering (GitHub, PKI) follows the same pattern across LDAP and EntraID
+- Using `try()` with null checks prevents errors when optional authentication fields are missing
+- The filter condition pattern: `try(v.authentication.{method}, null) != null && v.authentication.{method} != ""` ensures both existence and non-empty values
+- Story-4 completes the dependency chain from Story-3, now all locals referenced by `entraid_identities.tf` are defined

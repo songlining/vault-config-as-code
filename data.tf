@@ -147,6 +147,29 @@ locals {
     for k, v in local.ldap_human_identities_map :
     k => v if try(v.authentication.github, null) != null && v.authentication.github != ""
   }
+
+  # EntraID human identities (files starting with entraid_human_)
+  entraid_human_identities_map = {
+    for filename, config in local.configs_by_type.identities :
+    config.identity.name => config
+    if startswith(filename, "entraid_human_")
+  }
+
+  # Filtered EntraID identity maps for specific authentication types
+  entraid_human_with_oidc = {
+    for k, v in local.entraid_human_identities_map :
+    k => v if try(v.authentication.oidc, null) != null && v.authentication.oidc != "" && !try(v.authentication.disabled, false) && try(v.identity.status, "active") != "deactivated"
+  }
+
+  entraid_human_with_github = {
+    for k, v in local.entraid_human_identities_map :
+    k => v if try(v.authentication.github, null) != null && v.authentication.github != ""
+  }
+
+  entraid_human_with_pki = {
+    for k, v in local.entraid_human_identities_map :
+    k => v if try(v.authentication.pki, null) != null && v.authentication.pki != ""
+  }
 }
 
 # Output for debugging and validation
