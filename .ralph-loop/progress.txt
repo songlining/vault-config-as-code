@@ -954,3 +954,86 @@
 - GitHandler integrates with YAMLGenerator (Story-13), UserStore (Story-14), and GroupHandler (Story-15) for complete SCIM provisioning workflow
 - The service provides automated PR creation enabling manual review before Terraform applies changes
 
+---
+
+### Iteration 17 - Story-18: Create SCIM Bridge Configuration Module
+
+**Date:** 2026-01-23
+
+**Completed:** Story-18 (Create SCIM Bridge Configuration Module)
+
+**What was done:**
+- Created scim-bridge/app/config.py with comprehensive Pydantic Settings configuration (164 lines)
+- Implemented SCIMBridgeSettings class inheriting from BaseSettings for type-safe environment variable handling
+- Configured all required environment variables:
+  - SCIM_BEARER_TOKEN (required) - Bearer token for SCIM API authentication from EntraID
+  - GITHUB_TOKEN (required) - GitHub personal access token for PR creation
+- Configured environment variables with defaults:
+  - GIT_REPO_URL (default: "https://github.com/your-org/vault-config-as-code.git") - Git repository URL
+  - LOG_LEVEL (default: "INFO") - Logging level with validation
+  - REPO_CLONE_DIR (default: "/data/repo") - Local directory for cloning Git repository
+  - USER_MAPPING_FILE (default: "/data/user_mapping.json") - JSON file for user ID mapping persistence
+- Added comprehensive validation using Pydantic validators:
+  - validate_log_level: Ensures LOG_LEVEL is valid Python logging level
+  - validate_git_repo_url: Validates URL format and ensures GitHub repository
+  - validate_paths: Converts strings to Path objects
+  - validate_tokens: Ensures required tokens are not empty
+- Implemented helper methods:
+  - ensure_data_directories(): Creates necessary data directories
+  - get_schema_path(): Returns full path to schema file within cloned repository
+- Created global settings management with singleton pattern:
+  - get_settings(): Global settings instance with lazy initialization
+  - reload_settings(): Force reload for testing purposes
+- Added bonus schema_file_path configuration for schema file location
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/app/config.py created
+  ✅ SCIM_BEARER_TOKEN environment variable loaded as required field
+  ✅ GIT_REPO_URL environment variable loaded with default GitHub URL
+  ✅ GITHUB_TOKEN environment variable loaded as required field
+  ✅ LOG_LEVEL environment variable loaded with default 'INFO'
+  ✅ REPO_CLONE_DIR configuration for local repository path
+  ✅ USER_MAPPING_FILE configuration for user store persistence
+  ✅ Validation for required environment variables with descriptive error messages
+  ✅ Pydantic Settings used for type-safe configuration
+- Python syntax validation passed
+
+**Learnings:**
+- Pydantic Settings v2 configuration patterns:
+  - Use BaseSettings as base class for environment variable configuration
+  - Use Field() with env parameter to map environment variables: Field(env="ENV_VAR_NAME")
+  - Use "..." (Ellipsis) for required fields without defaults
+  - Use descriptive defaults for optional configuration
+  - Enable .env file loading with Config.env_file = ".env"
+- Environment variable validation best practices:
+  - Create custom validators using @validator("field_name") decorator
+  - Validate required tokens are not empty or whitespace-only
+  - Validate LOG_LEVEL against standard Python logging levels
+  - Validate Git URLs for proper format and GitHub requirement
+  - Convert string paths to Path objects for type safety
+  - Use descriptive error messages that include field context
+- Configuration management patterns:
+  - Implement singleton pattern for settings to avoid re-reading env vars on every access
+  - Provide reload function for testing scenarios
+  - Create helper methods for common operations (directory creation, path resolution)
+  - Use pathlib.Path for all file/directory paths instead of strings
+  - Group related configuration with clear comments
+- Type safety best practices:
+  - Use type hints for all fields (str, Path, Optional types)
+  - Use Path objects instead of strings for file paths
+  - Define return types for all methods
+  - Use Optional for global settings instance
+- Directory management patterns:
+  - Create parent directories automatically with mkdir(parents=True, exist_ok=True)
+  - Separate data directory creation into dedicated method
+  - Ensure directories exist during settings initialization
+- Configuration organization:
+  - Group required vs optional environment variables with comments
+  - Place validation logic close to field definitions
+  - Document each field's purpose and usage
+  - Include additional helper configuration (schema_file_path)
+- Story-18 creates the configuration foundation needed for Story-19 (Dockerfile) and Story-21 (.env.example)
+- The configuration module will be imported by main.py (Story-17) and other services for centralized settings management
+- This pattern enables environment-specific configuration while maintaining type safety and validation
+

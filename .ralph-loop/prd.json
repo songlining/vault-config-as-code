@@ -270,7 +270,7 @@
         "User deactivation sets status=deactivated and disabled=true",
         "Returns SCIM-compliant responses with custom fields for PR URL and YAML file"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-18",
@@ -287,7 +287,7 @@
         "Validation for required environment variables",
         "Pydantic Settings or similar for type-safe configuration"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-19",
