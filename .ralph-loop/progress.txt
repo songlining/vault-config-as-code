@@ -1,0 +1,32 @@
+# Progress Log
+# Each iteration appends learnings below
+
+---
+
+### Iteration 2 - Story-1: Create EntraID Terraform Variables File
+
+**Date:** 2026-01-23
+
+**Completed:** Story-1 (Create EntraID Terraform Variables File)
+
+**What was done:**
+- Created `entraid_variables.tf` following the pattern from `neo4j_variables.tf` and `ldap_variables.tf`
+- Defined `enable_entraid_auth` (bool, default: false) - Enable/disable EntraID OIDC auth backend
+- Defined `entraid_tenant_id` (string, default: "") - Azure AD tenant ID for OIDC discovery URL
+- Defined `entraid_client_id` (string, sensitive, default: "") - EntraID application client ID
+- Defined `entraid_client_secret` (string, sensitive, default: "") - EntraID application client secret
+- Defined `entraid_oidc_scopes` (list(string), default: ["openid", "profile", "email"]) - OIDC scopes for authentication
+
+**Verification:**
+- All acceptance criteria verified
+- `terraform validate` passed successfully
+
+**Learnings:**
+- Terraform variable files in this project follow a consistent pattern:
+  - Header comment with description
+  - Enable flag variable first (bool, default: false)
+  - Configuration variables with proper types and sensitive flag for secrets
+  - Empty string defaults for configuration values that need to be provided
+  - List defaults for scopes/arrays
+- `terraform validate` is essential to run after creating any .tf file
+

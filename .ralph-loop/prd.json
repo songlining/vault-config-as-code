@@ -1,0 +1,418 @@
+{
+  "project": "vault-entraid-scim-integration",
+  "description": "Integrate Microsoft EntraID (Azure AD) user provisioning into Vault configuration-as-code repository using SCIM protocol. Users will be provisioned via SCIM webhooks → YAML files → Git PRs → Terraform → Vault, and authenticate via OIDC at runtime.",
+  "stories": [
+    {
+      "id": "Story-1",
+      "title": "Create EntraID Terraform Variables File",
+      "description": "Create entraid_variables.tf with all required variables for EntraID OIDC authentication backend configuration including enable flag, tenant ID, client ID, client secret, and OIDC scopes",
+      "acceptance_criteria": [
+        "File entraid_variables.tf created with enable_entraid_auth variable (bool, default false)",
+        "entraid_tenant_id variable defined (string, default empty)",
+        "entraid_client_id variable defined (string, sensitive, default empty)",
+        "entraid_client_secret variable defined (string, sensitive, default empty)",
+        "entraid_oidc_scopes variable defined (list(string), default [openid, profile, email])",
+        "All variables have proper descriptions",
+        "terraform validate passes"
+      ],
+      "passes": true
+    },
+    {
+      "id": "Story-2",
+      "title": "Create OIDC Authentication Backend Configuration",
+      "description": "Create entraid-auth.tf with vault_jwt_auth_backend resource for EntraID OIDC and vault_jwt_auth_backend_role for default user role",
+      "acceptance_criteria": [
+        "File entraid-auth.tf created",
+        "vault_jwt_auth_backend.entraid resource configured with count based on enable_entraid_auth",
+        "Backend type set to 'oidc', path set to 'oidc'",
+        "OIDC discovery URL configured with tenant ID variable",
+        "Client ID and client secret from variables",
+        "vault_jwt_auth_backend_role.entraid_user resource created",
+        "Role configured with user_claim='email', groups_claim='groups'",
+        "Allowed redirect URIs include vault_url/ui/vault/auth/oidc/oidc/callback",
+        "Token TTL and max TTL configured (8h and 168h)",
+        "terraform validate passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-3",
+      "title": "Create EntraID Identity Resources Configuration",
+      "description": "Create entraid_identities.tf with vault_identity_entity and vault_identity_entity_alias resources for EntraID human identities supporting OIDC, GitHub, and PKI multi-auth",
+      "acceptance_criteria": [
+        "File entraid_identities.tf created",
+        "vault_identity_entity.entraid_human resource with for_each using local.entraid_human_identities_map",
+        "Entity metadata includes role, team, email, status, entraid_upn, entraid_object_id, spiffe_id",
+        "Entity disabled field uses authentication.disabled or checks status='deactivated'",
+        "vault_identity_entity_alias.entraid_human_oidc for OIDC authentication",
+        "vault_identity_entity_alias.entraid_human_github for optional GitHub multi-auth",
+        "vault_identity_entity_alias.entraid_human_pki for optional PKI multi-auth",
+        "All aliases use correct mount_accessors",
+        "terraform validate passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-4",
+      "title": "Update data.tf with EntraID Identity Parsing",
+      "description": "Add EntraID human identity parsing locals to data.tf including entraid_human_identities_map, entraid_human_with_oidc, entraid_human_with_github, and entraid_human_with_pki",
+      "acceptance_criteria": [
+        "data.tf updated after line 150 (or appropriate location)",
+        "entraid_human_identities_map local filters files starting with 'entraid_human_'",
+        "entraid_human_with_oidc local filters identities with valid oidc auth and not disabled",
+        "entraid_human_with_github local filters identities with github auth configured",
+        "entraid_human_with_pki local filters identities with pki auth configured",
+        "All locals use try() for safe access to optional fields",
+        "terraform validate passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-5",
+      "title": "Update identity_groups.tf for EntraID Group Membership",
+      "description": "Add vault_identity_group_member_entity_ids.entraid_human_group resource to handle EntraID human identity group memberships",
+      "acceptance_criteria": [
+        "identity_groups.tf updated with vault_identity_group_member_entity_ids.entraid_human_group",
+        "Resource filters internal_groups_map for groups with entraid_human_identities",
+        "Member entity IDs mapped from vault_identity_entity.entraid_human using entraid_human_identities list",
+        "exclusive flag set to false for non-exclusive membership",
+        "terraform validate passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-6",
+      "title": "Create EntraID Human Identity YAML Schema",
+      "description": "Create identities/schema_entraid_human.yaml with JSON Schema definition for EntraID human identity configuration files",
+      "acceptance_criteria": [
+        "File identities/schema_entraid_human.yaml created",
+        "Schema defines metadata object with version, created_date, description, entraid_object_id, entraid_upn, provisioned_via_scim",
+        "Schema defines identity object with name, email, role, team, status (active/deactivated)",
+        "Schema defines authentication object with oidc (required), github (optional), pki (optional), disabled (boolean)",
+        "Schema defines policies object with identity_policies array",
+        "All required fields properly specified",
+        "Pattern validation for email and status enum",
+        "Schema is valid JSON Schema draft-07"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-7",
+      "title": "Create Example EntraID Human Identity File",
+      "description": "Create identities/entraid_human_example.yaml as a reference example following the schema_entraid_human.yaml schema",
+      "acceptance_criteria": [
+        "File identities/entraid_human_example.yaml created",
+        "Follows schema_entraid_human.yaml structure",
+        "Includes all metadata fields with example values",
+        "Includes all identity fields (name, email, role, team, status)",
+        "Includes authentication with oidc and optional github/pki",
+        "Includes policies with identity_policies array",
+        "File validates against schema_entraid_human.yaml"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-8",
+      "title": "Update validate_identities.py for EntraID Support",
+      "description": "Update identities/validate_identities.py to support entraid_human_*.yaml files and load schema_entraid_human.yaml",
+      "acceptance_criteria": [
+        "validate_identities.py load_schemas() method updated to include entraid_human schema",
+        "entraid_human schema treated as optional (like ldap_human)",
+        "determine_schema_type() method checks for 'entraid_human_' prefix FIRST (before ldap_human and human)",
+        "Method returns 'entraid_human' for files starting with 'entraid_human_'",
+        "Script successfully validates entraid_human_example.yaml",
+        "Error handling for missing optional schemas"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-9",
+      "title": "Update dev.tfvars with EntraID Configuration",
+      "description": "Add EntraID configuration variables to dev.tfvars for local development (with placeholder values)",
+      "acceptance_criteria": [
+        "dev.tfvars updated with enable_entraid_auth = true",
+        "entraid_tenant_id added with placeholder 'your-tenant-id-here'",
+        "entraid_client_id added with placeholder 'your-client-id-here'",
+        "entraid_client_secret added with placeholder 'your-client-secret-here'",
+        "Placeholder values clearly marked for user to replace",
+        "terraform plan -var-file=dev.tfvars validates successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-10",
+      "title": "Create SCIM Bridge Directory Structure",
+      "description": "Create scim-bridge/ directory with proper structure including app/, app/models/, app/handlers/, app/services/, tests/, and configuration files",
+      "acceptance_criteria": [
+        "scim-bridge/ directory created",
+        "scim-bridge/app/ directory created",
+        "scim-bridge/app/models/ directory created",
+        "scim-bridge/app/handlers/ directory created",
+        "scim-bridge/app/services/ directory created",
+        "scim-bridge/tests/ directory created",
+        ".gitignore created in scim-bridge/ ignoring __pycache__, *.pyc, .env, data/, logs/"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-11",
+      "title": "Create SCIM User Pydantic Models",
+      "description": "Create scim-bridge/app/models/scim_user.py with Pydantic models for SCIM 2.0 User resources including SCIMUser, SCIMUserPatch, and SCIMGroup",
+      "acceptance_criteria": [
+        "File scim-bridge/app/models/scim_user.py created",
+        "SCIMUser model with schemas, id, userName, displayName, emails (list), active, title, department, groups",
+        "SCIMUserPatch model with Operations list for PATCH requests",
+        "SCIMGroup model for group representation",
+        "All models use Pydantic BaseModel",
+        "Proper field types and optional fields",
+        "SCIM schema URNs correctly defined"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-12",
+      "title": "Create Bearer Token Authentication Handler",
+      "description": "Create scim-bridge/app/handlers/auth.py with verify_bearer_token dependency for FastAPI to authenticate SCIM requests from EntraID",
+      "acceptance_criteria": [
+        "File scim-bridge/app/handlers/auth.py created",
+        "verify_bearer_token function created as FastAPI dependency",
+        "Function reads SCIM_BEARER_TOKEN from environment",
+        "Returns 401 Unauthorized if token missing or invalid",
+        "Token compared securely (using constant-time comparison)",
+        "Function can be used with Depends() in FastAPI routes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-13",
+      "title": "Create YAML Generator Service",
+      "description": "Create scim-bridge/app/services/yaml_generator.py to transform SCIM user payloads into Vault identity YAML files",
+      "acceptance_criteria": [
+        "File scim-bridge/app/services/yaml_generator.py created",
+        "YAMLGenerator class with __init__ accepting schema_path",
+        "scim_to_yaml() method converts SCIM dict to (filename, yaml_content) tuple",
+        "SCIM attributes correctly mapped: userName→oidc, displayName→name, emails→email, title→role, department→team, id→entraid_object_id",
+        "Filename generation: 'entraid_human_firstname_lastname.yaml' with sanitization",
+        "Role and team sanitization (lowercase, underscore separators)",
+        "Status mapped from active boolean (true→active, false→deactivated)",
+        "YAML output includes $schema reference to schema_entraid_human.yaml",
+        "Metadata includes provisioned_via_scim: true"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-14",
+      "title": "Create User Store Service",
+      "description": "Create scim-bridge/app/services/user_store.py to maintain persistent mapping between SCIM IDs and Vault identity names",
+      "acceptance_criteria": [
+        "File scim-bridge/app/services/user_store.py created",
+        "UserStore class with __init__ accepting data_file path",
+        "add_user() method stores scim_id, name, filename mapping",
+        "get_user() method retrieves user data by SCIM ID",
+        "list_all_users() method returns all users",
+        "delete_user() method removes user from store",
+        "Data persisted to JSON file",
+        "File locking or atomic writes for concurrent safety"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-15",
+      "title": "Create Group Handler Service",
+      "description": "Create scim-bridge/app/services/group_handler.py to manage identity_groups YAML files for SCIM group synchronization",
+      "acceptance_criteria": [
+        "File scim-bridge/app/services/group_handler.py created",
+        "GroupHandler class with __init__ accepting repo_clone_dir",
+        "sync_user_groups() method updates all relevant group files for user's memberships",
+        "remove_user_from_group() method removes user from specified group",
+        "_load_all_groups() private method loads all identity_groups/*.yaml files",
+        "_find_group_file() method finds group by display name",
+        "_add_user_to_group() private method adds user to entraid_human_identities list",
+        "_create_group_file() private method creates new group file if needed",
+        "Returns list of modified file paths",
+        "Group files include entraid_human_identities array"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-16",
+      "title": "Create Git Handler Service",
+      "description": "Create scim-bridge/app/services/git_handler.py to handle Git operations including clone, branch creation, commit, and GitHub PR creation",
+      "acceptance_criteria": [
+        "File scim-bridge/app/services/git_handler.py created",
+        "GitHandler class with __init__ accepting repo_url and github_token",
+        "clone_or_pull() method clones or updates repository",
+        "create_pr_for_user() method creates branch, commits user YAML, creates PR",
+        "create_pr_for_groups() method creates PR for group membership changes",
+        "Branch naming: 'scim-provision-{username}-{timestamp}'",
+        "Commit messages descriptive and follow conventions",
+        "PR creation via GitHub API with labels: 'scim-provisioning', 'needs-review'",
+        "PR title and body formatted clearly",
+        "Returns PR URL"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-17",
+      "title": "Create SCIM Bridge Main Application",
+      "description": "Create scim-bridge/app/main.py FastAPI application with SCIM 2.0 endpoints for user CRUD operations",
+      "acceptance_criteria": [
+        "File scim-bridge/app/main.py created",
+        "FastAPI app with title 'SCIM Bridge for Vault'",
+        "Health check endpoint at /health",
+        "POST /scim/v2/Users endpoint for user creation",
+        "PATCH /scim/v2/Users/{user_id} endpoint for user updates (including group changes)",
+        "DELETE /scim/v2/Users/{user_id} endpoint for user deactivation (soft delete)",
+        "GET /scim/v2/Users endpoint for listing users (reconciliation)",
+        "All endpoints protected by verify_bearer_token",
+        "User creation generates YAML, syncs groups, creates PR, stores mapping",
+        "User update handles group membership changes via GroupHandler",
+        "User deactivation sets status=deactivated and disabled=true",
+        "Returns SCIM-compliant responses with custom fields for PR URL and YAML file"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-18",
+      "title": "Create SCIM Bridge Configuration Module",
+      "description": "Create scim-bridge/app/config.py for environment variable configuration and settings management",
+      "acceptance_criteria": [
+        "File scim-bridge/app/config.py created",
+        "SCIM_BEARER_TOKEN environment variable loaded",
+        "GIT_REPO_URL environment variable loaded with default",
+        "GITHUB_TOKEN environment variable loaded",
+        "LOG_LEVEL environment variable loaded with default 'INFO'",
+        "REPO_CLONE_DIR configuration for local repository path",
+        "USER_MAPPING_FILE configuration for user store persistence",
+        "Validation for required environment variables",
+        "Pydantic Settings or similar for type-safe configuration"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-19",
+      "title": "Create SCIM Bridge Dockerfile",
+      "description": "Create scim-bridge/Dockerfile for containerizing the SCIM Bridge FastAPI application",
+      "acceptance_criteria": [
+        "File scim-bridge/Dockerfile created",
+        "Base image: python:3.11-slim or similar",
+        "Git installed via apt-get",
+        "Working directory set to /app",
+        "Requirements.txt copied and installed",
+        "Application code copied to /app",
+        "Data directory /data created",
+        "Port 8000 exposed",
+        "Uvicorn command to run app on 0.0.0.0:8000",
+        "Image builds successfully with docker build"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-20",
+      "title": "Create SCIM Bridge Requirements File",
+      "description": "Create scim-bridge/requirements.txt with all Python dependencies for the SCIM Bridge application",
+      "acceptance_criteria": [
+        "File scim-bridge/requirements.txt created",
+        "fastapi included (version pinned e.g., 0.109.0)",
+        "uvicorn[standard] included for ASGI server",
+        "pydantic included for data validation",
+        "pyyaml included for YAML generation",
+        "jsonschema included for schema validation",
+        "requests included for GitHub API calls",
+        "python-multipart included for form data",
+        "PyGithub or similar for GitHub operations (optional)",
+        "All versions pinned for reproducibility"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-21",
+      "title": "Create SCIM Bridge Environment Example",
+      "description": "Create scim-bridge/.env.example with example environment variables for configuration",
+      "acceptance_criteria": [
+        "File scim-bridge/.env.example created",
+        "SCIM_BEARER_TOKEN with example value and description",
+        "GIT_REPO_URL with example GitHub repo URL",
+        "GITHUB_TOKEN with placeholder and description",
+        "LOG_LEVEL with default 'INFO'",
+        "REPO_CLONE_DIR with default '/data/repo'",
+        "USER_MAPPING_FILE with default '/data/user_mapping.json'",
+        "All variables have descriptive comments"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-22",
+      "title": "Update docker-compose.yml for SCIM Bridge",
+      "description": "Add scim-bridge service to docker-compose.yml with proper networking, environment variables, volumes, and health check",
+      "acceptance_criteria": [
+        "docker-compose.yml updated with scim-bridge service",
+        "Build context set to ./scim-bridge",
+        "Container name set to scim-bridge",
+        "Port mapping 8080:8000",
+        "Environment variables for SCIM_BEARER_TOKEN, GIT_REPO_URL, GITHUB_TOKEN, LOG_LEVEL",
+        "Volumes for scim-data and scim-logs",
+        "Network connected to vault-network",
+        "Depends_on vault service",
+        "Health check configured with curl test",
+        "scim-data and scim-logs volumes added to volumes section",
+        "docker compose config validates successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-23",
+      "title": "Create SCIM Bridge Tests",
+      "description": "Create test files in scim-bridge/tests/ for YAML generation, user operations, and group handling",
+      "acceptance_criteria": [
+        "scim-bridge/tests/test_yaml_generation.py created",
+        "Test for SCIM to YAML conversion with valid user",
+        "Test for filename generation and sanitization",
+        "Test for role and team sanitization",
+        "Test for active/deactivated status mapping",
+        "scim-bridge/tests/test_users.py created",
+        "Test for user creation endpoint",
+        "Test for user update endpoint",
+        "Test for user deactivation endpoint",
+        "Tests use pytest and mock services appropriately",
+        "All tests pass with pytest"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-24",
+      "title": "Create Mock SCIM Client Script",
+      "description": "Create scim-bridge/mock-entraid-scim-client.py for local testing without actual EntraID connection",
+      "acceptance_criteria": [
+        "File scim-bridge/mock-entraid-scim-client.py created",
+        "Configurable SCIM_BRIDGE_URL and BEARER_TOKEN",
+        "create_user() function sending POST to /scim/v2/Users",
+        "update_user_groups() function sending PATCH with add/remove operations",
+        "deactivate_user() function sending DELETE request",
+        "list_users() function sending GET request",
+        "SCIM payloads conform to SCIM 2.0 specification",
+        "Can be run directly: python mock-entraid-scim-client.py",
+        "Helpful output showing response status and PR URLs"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-25",
+      "title": "Create SCIM Integration Documentation",
+      "description": "Create docs/SCIM_INTEGRATION_GUIDE.md with setup and usage instructions for the SCIM integration",
+      "acceptance_criteria": [
+        "File docs/SCIM_INTEGRATION_GUIDE.md created",
+        "Overview of SCIM integration architecture",
+        "Phase-by-phase implementation summary",
+        "Prerequisites and setup instructions",
+        "Environment configuration guide",
+        "Local development instructions with ngrok",
+        "Testing instructions using mock client",
+        "Troubleshooting section",
+        "Verification steps for each phase",
+        "Links to related documentation"
+      ],
+      "passes": false
+    }
+  ]
+}
