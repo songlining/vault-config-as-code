@@ -152,7 +152,7 @@
         "scim-bridge/tests/ directory created",
         ".gitignore created in scim-bridge/ ignoring __pycache__, *.pyc, .env, data/, logs/"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-11",

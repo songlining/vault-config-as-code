@@ -427,3 +427,57 @@
   - Validate identity configurations
   - Apply Terraform to provision EntraID users with OIDC authentication
   - Support multi-auth patterns (OIDC + GitHub + PKI) for EntraID users
+
+---
+
+### Iteration 10 - Story-10: Create SCIM Bridge Directory Structure
+
+**Date:** 2026-01-23
+
+**Completed:** Story-10 (Create SCIM Bridge Directory Structure)
+
+**What was done:**
+- Created scim-bridge/ root directory with proper structure for Phase 2 (SCIM Bridge implementation)
+- Created scim-bridge/app/ directory for main application code
+- Created scim-bridge/app/models/ directory for Pydantic SCIM models
+- Created scim-bridge/app/handlers/ directory for authentication and request handlers
+- Created scim-bridge/app/services/ directory for business logic (YAML generation, Git operations, user store, group handling)
+- Created scim-bridge/tests/ directory for pytest test files
+- Created scim-bridge/.gitignore with patterns for:
+  - Python cache files: __pycache__/, *.pyc, *.pyo, *.pyd
+  - Environment files: .env
+  - Data directory: data/
+  - Logs directory: logs/
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ scim-bridge/ directory created
+  ✅ scim-bridge/app/ directory created
+  ✅ scim-bridge/app/models/ directory created
+  ✅ scim-bridge/app/handlers/ directory created
+  ✅ scim-bridge/app/services/ directory created
+  ✅ scim-bridge/tests/ directory created
+  ✅ .gitignore created in scim-bridge/ ignoring __pycache__, *.pyc, .env, data/, logs/
+- Verified all directories exist using ls -la
+- Verified .gitignore content matches requirements
+
+**Learnings:**
+- Directory structure for FastAPI microservices follows a standard pattern:
+  - app/ - Main application code
+  - app/models/ - Pydantic models for request/response validation
+  - app/handlers/ - Request handlers and middleware (authentication, etc.)
+  - app/services/ - Business logic services (YAML generation, Git operations, etc.)
+  - tests/ - Test files using pytest
+- .gitignore patterns for Python projects should include:
+  - Python bytecode cache: __pycache__/, *.pyc, *.pyo, *.pyd
+  - Environment variables: .env (contains secrets)
+  - Application data: data/ (persistent storage)
+  - Log files: logs/ (runtime logs)
+- Using mkdir -p allows creating nested directories in a single command
+- Directory structure should be created before implementing code files (Story-11 onwards)
+- Story-10 establishes the foundation for Phase 2 (SCIM Bridge) implementation
+- This structure follows the dependency chain in AGENTS.md: Story-10 (dirs) → Story-11 (models) → Story-12+ (handlers/services)
+- The separation of handlers and services follows clean architecture principles:
+  - handlers/ - HTTP/API layer concerns (authentication, routing)
+  - services/ - Business logic (YAML generation, Git operations, user management)
+
