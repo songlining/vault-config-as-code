@@ -167,7 +167,7 @@
         "Proper field types and optional fields",
         "SCIM schema URNs correctly defined"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-12",

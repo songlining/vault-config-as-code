@@ -481,3 +481,83 @@
   - handlers/ - HTTP/API layer concerns (authentication, routing)
   - services/ - Business logic (YAML generation, Git operations, user management)
 
+---
+
+### Iteration 11 - Story-11: Create SCIM User Pydantic Models
+
+**Date:** 2026-01-23
+
+**Completed:** Story-11 (Create SCIM User Pydantic Models)
+
+**What was done:**
+- Created scim-bridge/app/models/scim_user.py with comprehensive SCIM 2.0 Pydantic models
+- Defined SCIM schema URNs as constants: SCIM_USER_SCHEMA and SCIM_PATCH_SCHEMA
+- Created SCIMEmail model for email objects with value, type, primary fields
+- Created SCIMGroupMembership model for group membership with value, $ref, display, type fields
+- Created SCIMUser model with all required SCIM 2.0 User resource fields:
+  - schemas: List[str] with default SCIM_USER_SCHEMA
+  - id: Optional[str] for SCIM user ID (EntraID object ID)
+  - externalId: Optional[str] for external identifier
+  - userName: str (required) for User Principal Name
+  - displayName: Optional[str] for full name
+  - emails: Optional[List[SCIMEmail]] for email addresses
+  - active: bool with default True for user status
+  - title: Optional[str] for job title/role
+  - department: Optional[str] for department/team
+  - groups: Optional[List[SCIMGroupMembership]] for group memberships
+- Created SCIMPatchOperation model for PATCH operations with op, path, value fields
+- Created SCIMUserPatch model for PATCH requests with Operations list
+- Created SCIMGroup model for group representation with id, displayName, members
+- Created additional helper models: SCIMListResponse and SCIMError for complete SCIM 2.0 API support
+- Created scim-bridge/app/models/__init__.py for package initialization and exports
+- All models include json_schema_extra with example values for documentation
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/app/models/scim_user.py created
+  ✅ SCIMUser model with schemas, id, userName, displayName, emails (list), active, title, department, groups
+  ✅ SCIMUserPatch model with Operations list for PATCH requests
+  ✅ SCIMGroup model for group representation
+  ✅ All models use Pydantic BaseModel
+  ✅ Proper field types and optional fields
+  ✅ SCIM schema URNs correctly defined
+
+**Learnings:**
+- Pydantic model design patterns for SCIM 2.0:
+  - Use Field() with default values for schema URN lists
+  - Define schema URN constants at module level for reusability
+  - Use Optional[] for all optional SCIM fields
+  - Use List[] with typed elements for arrays (emails, groups, operations)
+  - Include json_schema_extra with examples for automatic API documentation
+- SCIM 2.0 field naming conventions:
+  - camelCase for all field names (userName, displayName, externalId)
+  - Capital first letter for special fields (Operations in PATCH, Resources in ListResponse)
+  - Use of schemas field (plural) for schema URN lists
+- Complex SCIM field structures:
+  - emails is a list of complex objects with value, type, primary
+  - groups is a list of complex objects with value, $ref, display, type
+  - Use Field(alias="$ref") with populate_by_name=True for special characters in field names
+- SCIM PATCH operation structure:
+  - Operations (capital O) is a list of operation objects
+  - Each operation has op (add/remove/replace), optional path, optional value
+  - Value can be dict | list | str | bool depending on operation type
+- Pydantic v2 patterns:
+  - Use class Config with populate_by_name=True for alias support
+  - Use json_schema_extra instead of schema_extra for examples
+  - Union types can use | syntax (dict | list | str | bool)
+- Additional SCIM models for complete API:
+  - SCIMListResponse for GET /Users endpoint (reconciliation)
+  - SCIMError for standardized error responses
+  - Both include proper schema URNs
+- Package structure best practices:
+  - Create __init__.py to export all models and constants
+  - Use __all__ list to explicitly define public API
+  - Import all models in __init__ for easy consumption
+- Model organization strategy:
+  - Define helper models first (SCIMEmail, SCIMGroupMembership, SCIMPatchOperation)
+  - Then define main models that use helpers (SCIMUser, SCIMUserPatch, SCIMGroup)
+  - Finally define response models (SCIMListResponse, SCIMError)
+- Story-11 creates the foundation for Story-12 (auth handler) and Story-13 (YAML generator)
+- These models enable type-safe request/response handling in FastAPI endpoints
+- The SCIMUser model maps directly to the YAML generation logic in Story-13
+
