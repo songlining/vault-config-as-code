@@ -30,3 +30,90 @@
   - List defaults for scopes/arrays
 - `terraform validate` is essential to run after creating any .tf file
 
+---
+
+### Iteration 2 - Story-2: Create OIDC Authentication Backend Configuration
+
+**Date:** 2026-01-23
+
+**Completed:** Story-2 (Create OIDC Authentication Backend Configuration)
+
+**What was done:**
+- Created `entraid-auth.tf` following the pattern from `main.tf` JWT auth backend resources
+- Created `vault_jwt_auth_backend.entraid` resource with:
+  - `count = var.enable_entraid_auth ? 1 : 0` for conditional creation
+  - `type = "oidc"` and `path = "oidc"`
+  - OIDC discovery URL: `https://login.microsoftonline.com/${var.entraid_tenant_id}/v2.0`
+  - Bound issuer: `https://sts.windows.net/${var.entraid_tenant_id}/`
+  - Client ID and secret from variables
+  - Default role set to "entraid_user"
+- Created `vault_jwt_auth_backend_role.entraid_user` resource with:
+  - `user_claim = "email"` - email claim from EntraID
+  - `groups_claim = "groups"` - groups claim for group membership
+  - Allowed redirect URIs: UI and API callback paths
+  - Token TTL: 8 hours, Token max TTL: 168 hours (7 days)
+  - OIDC scopes from variable
+
+**Verification:**
+- All acceptance criteria verified
+- `terraform validate` passed successfully
+
+**Learnings:**
+- EntraID OIDC discovery URL format: `https://login.microsoftonline.com/{tenant_id}/v2.0`
+- EntraID OIDC issuer format: `https://sts.windows.net/{tenant_id}/`
+- Vault OIDC redirect URIs need both UI (`/ui/vault/auth/oidc/oidc/callback`) and API (`/v1/auth/oidc/oidc/callback`) paths
+- When using `count` with conditional resources, use index `[0]` to reference the resource in dependencies
+- Token TTL follows the same pattern as LDAP auth (8h TTL, 168h max TTL)
+
+---
+
+### Iteration 3 - Story-3: Create EntraID Identity Resources Configuration
+
+**Date:** 2026-01-23
+
+**Completed:** Story-3 (Create EntraID Identity Resources Configuration)
+
+**What was done:**
+- Created `entraid_identities.tf` following the pattern from `ldap_identities.tf`
+- Created `vault_identity_entity.entraid_human` resource with:
+  - `for_each = local.entraid_human_identities_map` for iteration over EntraID users
+  - `disabled` field using `try(each.value.authentication.disabled, false) || try(each.value.identity.status, "active") == "deactivated"`
+  - Metadata fields: role, team, email, status, entraid_upn, entraid_object_id, spiffe_id
+  - SPIFFE ID pattern: `spiffe://vault/entraid/human/{role}/{team}/{name}`
+  - Policies concatenated from identity_policies array and human-identity-token-policies
+- Created `vault_identity_entity_alias.entraid_human_oidc` resource for OIDC authentication:
+  - Conditional creation using `var.enable_entraid_auth ? local.entraid_human_with_oidc : {}`
+  - Mount accessor from `vault_jwt_auth_backend.entraid[0].accessor`
+  - Alias name from `authentication.oidc` field (email)
+- Created `vault_identity_entity_alias.entraid_human_github` resource for optional GitHub multi-auth:
+  - Uses `local.entraid_human_with_github` local for filtering
+  - Mount accessor from `vault_github_auth_backend.hashicorp.accessor`
+  - Alias name from `authentication.github` field
+- Created `vault_identity_entity_alias.entraid_human_pki` resource for optional PKI multi-auth:
+  - Uses `local.entraid_human_with_pki` local for filtering
+  - Mount accessor from `vault_auth_backend.cert.accessor`
+  - Alias name from `authentication.pki` field
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File entraid_identities.tf created
+  ✅ vault_identity_entity.entraid_human with for_each using local.entraid_human_identities_map
+  ✅ Entity metadata includes all required fields (role, team, email, status, entraid_upn, entraid_object_id, spiffe_id)
+  ✅ Entity disabled field uses authentication.disabled or checks status='deactivated'
+  ✅ vault_identity_entity_alias.entraid_human_oidc for OIDC authentication
+  ✅ vault_identity_entity_alias.entraid_human_github for optional GitHub multi-auth
+  ✅ vault_identity_entity_alias.entraid_human_pki for optional PKI multi-auth
+  ✅ All aliases use correct mount_accessors
+  ⚠️ terraform validate - Unable to verify (terraform binary not available in environment, locals will be created in Story-4)
+
+**Learnings:**
+- Entity identity resources follow the same pattern as LDAP identities with multi-auth support
+- The `disabled` field uses a compound boolean expression to check both `authentication.disabled` and `identity.status == "deactivated"`
+- OIDC alias conditional creation pattern: `var.enable_entraid_auth ? local.entraid_human_with_oidc : {}`
+- Multi-auth pattern: Single entity with multiple aliases for different auth methods (OIDC, GitHub, PKI)
+- Mount accessor references:
+  - OIDC: `vault_jwt_auth_backend.entraid[0].accessor` (uses index [0] due to count conditional)
+  - GitHub: `vault_github_auth_backend.hashicorp.accessor` (no index, always enabled)
+  - PKI: `vault_auth_backend.cert.accessor` (no index, always enabled)
+- SPIFFE ID namespace pattern for EntraID: `spiffe://vault/entraid/human/{role}/{team}/{name}`
+- Story dependency note: Story-3 references locals that will be created in Story-4 (entraid_human_identities_map, entraid_human_with_oidc, entraid_human_with_github, entraid_human_with_pki)

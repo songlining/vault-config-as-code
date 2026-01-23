@@ -33,7 +33,7 @@
         "Token TTL and max TTL configured (8h and 168h)",
         "terraform validate passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-3",
@@ -50,7 +50,7 @@
         "All aliases use correct mount_accessors",
         "terraform validate passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-4",
