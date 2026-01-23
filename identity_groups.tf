@@ -53,6 +53,17 @@ resource "vault_identity_group_member_entity_ids" "ldap_human_group" {
   exclusive         = false
 }
 
+# Internal group members (EntraID human identities)
+resource "vault_identity_group_member_entity_ids" "entraid_human_group" {
+  for_each = {
+    for name, config in local.internal_groups_map :
+    name => config if try(length(config.entraid_human_identities), 0) > 0
+  }
+  group_id          = vault_identity_group.internal_group[each.key].id
+  member_entity_ids = [for i in each.value.entraid_human_identities : vault_identity_entity.entraid_human[i].id]
+  exclusive         = false
+}
+
 # Sub-groups (supports both internal and external groups as members)
 resource "vault_identity_group_member_group_ids" "group_group" {
   for_each = local.internal_groups_map

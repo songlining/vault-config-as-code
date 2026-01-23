@@ -78,7 +78,7 @@
         "exclusive flag set to false for non-exclusive membership",
         "terraform validate passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-6",

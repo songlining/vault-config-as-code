@@ -164,3 +164,41 @@
 - Using `try()` with null checks prevents errors when optional authentication fields are missing
 - The filter condition pattern: `try(v.authentication.{method}, null) != null && v.authentication.{method} != ""` ensures both existence and non-empty values
 - Story-4 completes the dependency chain from Story-3, now all locals referenced by `entraid_identities.tf` are defined
+
+---
+
+### Iteration 5 - Story-5: Update identity_groups.tf for EntraID Group Membership
+
+**Date:** 2026-01-23
+
+**Completed:** Story-5 (Update identity_groups.tf for EntraID Group Membership)
+
+**What was done:**
+- Updated `identity_groups.tf` to add vault_identity_group_member_entity_ids.entraid_human_group resource
+- Resource added after ldap_human_group resource (line 56-65)
+- Follows identical pattern as ldap_human_group for consistency:
+  - `for_each` filters internal_groups_map for groups with entraid_human_identities
+  - Filter condition: `try(length(config.entraid_human_identities), 0) > 0`
+  - `group_id` references vault_identity_group.internal_group[each.key].id
+  - `member_entity_ids` maps from vault_identity_entity.entraid_human using entraid_human_identities list
+  - `exclusive = false` allows non-exclusive membership
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ identity_groups.tf updated with vault_identity_group_member_entity_ids.entraid_human_group
+  ✅ Resource filters internal_groups_map for groups with entraid_human_identities
+  ✅ Member entity IDs mapped from vault_identity_entity.entraid_human using entraid_human_identities list
+  ✅ exclusive flag set to false for non-exclusive membership
+  ⚠️ terraform validate - Unable to verify (terraform binary not available in environment, syntax verified manually)
+
+**Learnings:**
+- Group membership resources follow a consistent pattern for different identity types:
+  - human (traditional), application, ldap_human, and now entraid_human
+  - Each uses vault_identity_group_member_entity_ids resource type
+  - Each filters internal_groups_map for groups containing their specific identity list
+  - All use `exclusive = false` to allow multiple membership resources to manage the same group
+- The `exclusive = false` flag is critical - it allows multiple vault_identity_group_member_entity_ids resources to manage different subsets of members for the same group
+- Resource placement: EntraID group membership added immediately after LDAP group membership, before sub-groups section
+- Filter pattern uses `try(length(config.{identity_type}_identities), 0) > 0` to safely check for group membership
+- Member entity IDs use comprehension: `[for i in each.value.{identity_type}_identities : vault_identity_entity.{identity_type}[i].id]`
+- Story-5 completes the EntraID identity integration into the group membership system, allowing EntraID users to be members of internal groups
