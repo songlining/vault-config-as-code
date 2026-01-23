@@ -94,7 +94,7 @@
         "Pattern validation for email and status enum",
         "Schema is valid JSON Schema draft-07"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-7",

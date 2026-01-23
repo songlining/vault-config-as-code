@@ -1,0 +1,112 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "EntraID Human Identity Schema"
+description: "Schema for defining EntraID (Azure AD) human identities in Vault"
+type: object
+properties:
+  $schema:
+    type: string
+    description: "JSON Schema reference for this document"
+  metadata:
+    type: object
+    properties:
+      version:
+        type: string
+        pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        description: "Semantic version of this identity configuration"
+      created_date:
+        type: string
+        format: date
+        description: "Date when this identity was created"
+      description:
+        type: string
+        description: "Brief description of this human identity"
+      entraid_object_id:
+        type: string
+        description: "EntraID object ID (UUID) for this user"
+        pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      entraid_upn:
+        type: string
+        description: "EntraID User Principal Name (UPN)"
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      provisioned_via_scim:
+        type: boolean
+        description: "Whether this identity was provisioned via SCIM"
+        default: false
+    required:
+      - version
+      - created_date
+      - description
+      - entraid_object_id
+      - entraid_upn
+  identity:
+    type: object
+    properties:
+      name:
+        type: string
+        description: "Full name of the person"
+        minLength: 1
+      email:
+        type: string
+        format: email
+        description: "Email address of the person"
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      role:
+        type: string
+        description: "Job role or position"
+        minLength: 1
+      team:
+        type: string
+        description: "Team or department"
+        minLength: 1
+      status:
+        type: string
+        description: "User status in the system"
+        enum:
+          - active
+          - deactivated
+        default: active
+    required:
+      - name
+      - email
+      - role
+      - team
+      - status
+  authentication:
+    type: object
+    properties:
+      oidc:
+        type: string
+        description: "OIDC email claim for EntraID authentication (required)"
+        format: email
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      github:
+        type: string
+        description: "GitHub username for multi-auth (optional)"
+        pattern: "^[a-zA-Z0-9\\-_]+$"
+      pki:
+        type: string
+        description: "PKI certificate identifier for multi-auth (optional)"
+        pattern: "^[a-zA-Z0-9\\-\\.]+$"
+      disabled:
+        type: boolean
+        description: "Whether authentication is disabled for this identity"
+        default: false
+    required:
+      - oidc
+  policies:
+    type: object
+    properties:
+      identity_policies:
+        type: array
+        items:
+          type: string
+        description: "List of Vault policies assigned to this identity"
+        minItems: 1
+    required:
+      - identity_policies
+required:
+  - metadata
+  - identity
+  - authentication
+  - policies
+additionalProperties: false

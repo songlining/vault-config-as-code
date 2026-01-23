@@ -202,3 +202,68 @@
 - Filter pattern uses `try(length(config.{identity_type}_identities), 0) > 0` to safely check for group membership
 - Member entity IDs use comprehension: `[for i in each.value.{identity_type}_identities : vault_identity_entity.{identity_type}[i].id]`
 - Story-5 completes the EntraID identity integration into the group membership system, allowing EntraID users to be members of internal groups
+
+---
+
+### Iteration 6 - Story-6: Create EntraID Human Identity YAML Schema
+
+**Date:** 2026-01-23
+
+**Completed:** Story-6 (Create EntraID Human Identity YAML Schema)
+
+**What was done:**
+- Created `identities/schema_entraid_human.yaml` following JSON Schema draft-07 specification
+- Schema structure based on existing `schema_human.yaml` pattern with EntraID-specific fields
+- Defined metadata object with:
+  - Standard fields: version (semantic version pattern), created_date (date format), description
+  - EntraID-specific fields: entraid_object_id (UUID pattern), entraid_upn (email pattern for UPN)
+  - SCIM integration field: provisioned_via_scim (boolean, default false)
+- Defined identity object with:
+  - name (string, minLength 1), email (email format with pattern validation)
+  - role (string, minLength 1), team (string, minLength 1)
+  - status (enum: [active, deactivated], default: active)
+- Defined authentication object with:
+  - oidc (string, email format, REQUIRED) - primary auth method for EntraID
+  - github (string, username pattern, optional) - for multi-auth support
+  - pki (string, certificate pattern, optional) - for multi-auth support
+  - disabled (boolean, default false) - to disable authentication
+- Defined policies object with:
+  - identity_policies (array of strings, minItems 1)
+- All required fields properly specified in required arrays at each level
+- Pattern validation for email fields: `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+- Pattern validation for entraid_object_id (UUID): `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
+- Status field uses enum for validation: [active, deactivated]
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File identities/schema_entraid_human.yaml created
+  ✅ Schema defines metadata object with version, created_date, description, entraid_object_id, entraid_upn, provisioned_via_scim
+  ✅ Schema defines identity object with name, email, role, team, status (active/deactivated)
+  ✅ Schema defines authentication object with oidc (required), github (optional), pki (optional), disabled (boolean)
+  ✅ Schema defines policies object with identity_policies array
+  ✅ All required fields properly specified
+  ✅ Pattern validation for email and status enum
+  ✅ Schema is valid JSON Schema draft-07
+
+**Learnings:**
+- JSON Schema YAML files follow a consistent pattern across identity types (human, application, ldap_human, entraid_human)
+- Schema structure has four main sections: metadata, identity, authentication, policies
+- Required fields are specified at multiple levels:
+  - Root level: requires all four main sections (metadata, identity, authentication, policies)
+  - Each section level: specifies which fields within that section are required
+- EntraID schema differences from standard human schema:
+  - Metadata includes entraid_object_id (UUID) and entraid_upn (UPN) fields
+  - Metadata includes provisioned_via_scim boolean flag for SCIM-provisioned users
+  - Identity includes status field (enum: active/deactivated) for lifecycle management
+  - Authentication requires oidc (email) as primary method, while github/pki are optional for multi-auth
+  - Authentication includes disabled flag for soft-delete/deactivation support
+- Pattern validation best practices:
+  - Email pattern: `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$` (covers most standard emails)
+  - UUID pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` (lowercase hex)
+  - Username pattern: `^[a-zA-Z0-9\-_]+$` (alphanumeric, hyphens, underscores)
+  - Certificate pattern: `^[a-zA-Z0-9\-\.]+$` (alphanumeric, hyphens, dots)
+- Use `format: email` in combination with `pattern` for stricter email validation
+- Use `default` values for optional boolean and enum fields to provide sensible defaults
+- Multi-auth support pattern: one required auth method (oidc), other methods (github, pki) are optional
+- The schema supports the soft-delete pattern via status=deactivated and disabled=true combination
+- Story-6 creates the schema foundation for Story-7 (example file) and Story-8 (validation script updates)
