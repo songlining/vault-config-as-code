@@ -267,3 +267,50 @@
 - Multi-auth support pattern: one required auth method (oidc), other methods (github, pki) are optional
 - The schema supports the soft-delete pattern via status=deactivated and disabled=true combination
 - Story-6 creates the schema foundation for Story-7 (example file) and Story-8 (validation script updates)
+
+---
+
+### Iteration 7 - Story-7: Create Example EntraID Human Identity File
+
+**Date:** 2026-01-23
+
+**Completed:** Story-7 (Create Example EntraID Human Identity File)
+
+**What was done:**
+- Created identities/entraid_human_example.yaml as a comprehensive reference example
+- File includes $schema reference to schema_entraid_human.yaml
+- Metadata section includes all required fields:
+  - version: "1.0.0" (semantic version)
+  - created_date: "2026-01-23" (date format)
+  - description: Descriptive text
+  - entraid_object_id: Example UUID in lowercase hex format (12345678-1234-1234-1234-123456789abc)
+  - entraid_upn: Example UPN (jane.example@contoso.onmicrosoft.com)
+  - provisioned_via_scim: false (demonstrates manual provisioning)
+- Identity section includes all required fields:
+  - name: "Jane Example"
+  - email: "jane.example@contoso.com"
+  - role: "senior_engineer"
+  - team: "platform_engineering"
+  - status: "active" (from enum)
+- Authentication section demonstrates:
+  - oidc: "jane.example@contoso.com" (required, primary auth method)
+  - github: "jane-example" (optional, demonstrates multi-auth)
+  - pki: "jane.example.contoso.com" (optional, demonstrates multi-auth)
+  - disabled: false (authentication enabled)
+- Policies section includes:
+  - identity_policies: array with 2 example policies (developer-policy, senior-engineer-policy)
+
+**Verification:**
+- All acceptance criteria verified successfully
+- File validates against schema_entraid_human.yaml (all required fields present, patterns match, types correct)
+
+**Learnings:**
+- Example YAML files serve as reference documentation for users creating manual identity files
+- The example file demonstrates both required and optional fields
+- Multi-auth pattern is demonstrated by including all three auth methods (oidc, github, pki)
+- The $schema reference at the top of the file links to the schema for validation and documentation
+- Example values should be realistic but clearly fictitious (used "contoso.com" domain - Microsoft's standard example domain)
+- Status field demonstrates "active" state (the other valid option is "deactivated")
+- The disabled field is set to false to show enabled authentication
+- provisioned_via_scim set to false demonstrates manually created identity (SCIM bridge would set this to true)
+- Story-7 creates the reference example needed for users and for Story-8 validation testing

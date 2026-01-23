@@ -109,7 +109,7 @@
         "Includes policies with identity_policies array",
         "File validates against schema_entraid_human.yaml"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-8",
