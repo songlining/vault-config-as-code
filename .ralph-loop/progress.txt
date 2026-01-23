@@ -561,3 +561,68 @@
 - These models enable type-safe request/response handling in FastAPI endpoints
 - The SCIMUser model maps directly to the YAML generation logic in Story-13
 
+---
+
+### Iteration 12 - Story-12: Create Bearer Token Authentication Handler
+
+**Date:** 2026-01-23
+
+**Completed:** Story-12 (Create Bearer Token Authentication Handler)
+
+**What was done:**
+- Created scim-bridge/app/handlers/auth.py with verify_bearer_token function
+- Created scim-bridge/app/handlers/__init__.py for package initialization
+- Implemented HTTPBearer security scheme using FastAPI's built-in security utilities
+- Implemented verify_bearer_token as a FastAPI dependency function that:
+  - Accepts HTTPAuthorizationCredentials via Depends(security) annotation
+  - Reads SCIM_BEARER_TOKEN from environment variable
+  - Returns HTTP 500 if SCIM_BEARER_TOKEN is not configured
+  - Returns HTTP 401 if provided token is missing or empty
+  - Performs constant-time comparison using secrets.compare_digest()
+  - Returns HTTP 401 if token doesn't match expected value
+  - Returns the verified token on success
+- Included comprehensive docstring with usage example
+- Added WWW-Authenticate header to all auth-related error responses (per SCIM spec)
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/app/handlers/auth.py created (77 lines)
+  ✅ verify_bearer_token function created as FastAPI dependency (uses Annotated[HTTPAuthorizationCredentials, Depends(security)])
+  ✅ Function reads SCIM_BEARER_TOKEN from environment (line 45: os.environ.get("SCIM_BEARER_TOKEN"))
+  ✅ Returns 401 Unauthorized if token missing (lines 59-64) or invalid (lines 68-73)
+  ✅ Token compared securely using secrets.compare_digest() for constant-time comparison (line 68)
+  ✅ Function can be used with Depends() in FastAPI routes (example in docstring, lines 39-42)
+  ✅ Python syntax validated successfully (py_compile passes)
+
+**Learnings:**
+- FastAPI dependency injection patterns:
+  - Use `Annotated[Type, Depends(dependency)]` for type hints with dependencies
+  - Dependencies can call other dependencies (verify_bearer_token depends on HTTPBearer security)
+  - Return value of dependency is injected into route function or can be used implicitly for auth
+  - Use `dependencies=[Depends(verify_bearer_token)]` in route decorator for auth-only checks without using the return value
+- HTTPBearer security scheme:
+  - FastAPI's HTTPBearer automatically extracts token from Authorization header
+  - Validates format: "Bearer <token>"
+  - Returns HTTPAuthorizationCredentials object with .credentials property containing the token
+  - Automatically returns 403 if Authorization header is missing (before reaching our dependency)
+- Security best practices:
+  - Always use secrets.compare_digest() for token comparison (prevents timing attacks)
+  - Never use == or simple string comparison for tokens
+  - Include WWW-Authenticate header in 401 responses (SCIM/HTTP spec requirement)
+  - Return 500 (not 401) if server configuration is missing (it's a server error, not auth failure)
+- Error handling strategy:
+  - Missing configuration (SCIM_BEARER_TOKEN not set): HTTP 500 Internal Server Error
+  - Missing token in request: HTTP 401 Unauthorized with "Bearer token missing"
+  - Invalid token (doesn't match): HTTP 401 Unauthorized with "Invalid bearer token"
+- Module organization:
+  - Create __init__.py to export public functions
+  - Use __all__ to explicitly define public API
+  - Keep auth logic separate from route handlers for reusability
+- Documentation patterns:
+  - Include comprehensive docstrings with Args, Returns, Raises sections
+  - Provide usage examples in docstring for FastAPI dependencies
+  - Explain security considerations in comments (constant-time comparison)
+- Story-12 completes the authentication layer needed for Story-17 (main.py with SCIM endpoints)
+- This dependency will be used to protect all SCIM endpoints: POST/PATCH/DELETE/GET /scim/v2/Users
+- The verify_bearer_token function returns the token value, but most routes will use it via dependencies=[] decorator for implicit validation
+

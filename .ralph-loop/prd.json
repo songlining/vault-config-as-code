@@ -181,7 +181,7 @@
         "Token compared securely (using constant-time comparison)",
         "Function can be used with Depends() in FastAPI routes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-13",

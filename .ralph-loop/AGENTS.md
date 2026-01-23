@@ -28,6 +28,11 @@ This file contains patterns, gotchas, and reusable solutions discovered during p
 - Use FastAPI `Depends()` for authentication middleware
 - Return SCIM-compliant responses with proper schema URNs
 - Include custom fields in responses (PR URL, YAML filename)
+- Use `Annotated[Type, Depends(dependency)]` for dependency injection with type hints
+- Use `HTTPBearer()` for extracting bearer tokens from Authorization headers
+- Use `secrets.compare_digest()` for constant-time token comparison (prevents timing attacks)
+- Return 500 for missing server configuration, 401 for authentication failures
+- Include WWW-Authenticate header in 401 responses per HTTP/SCIM spec
 
 ### Python Validation Scripts
 - Separate required vs optional schemas in configuration
@@ -45,6 +50,8 @@ This file contains patterns, gotchas, and reusable solutions discovered during p
 - Don't create YAML files without schema validation
 - Don't use mutable default arguments in Python (use `None` and initialize in function)
 - Don't forget to handle optional fields with `try()` in Terraform locals
+- Don't use `==` for token comparison - always use `secrets.compare_digest()` for security
+- Don't forget to include WWW-Authenticate header in 401 authentication error responses
 
 ## Component-Specific Knowledge
 
