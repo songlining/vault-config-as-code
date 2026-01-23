@@ -250,7 +250,7 @@
         "PR title and body formatted clearly",
         "Returns PR URL"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-17",

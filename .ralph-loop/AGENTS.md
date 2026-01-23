@@ -218,3 +218,35 @@ Story-25 (docs)
 - Group file creation: Include all required fields (name, contact, type, arrays)
 - Name sanitization: lowercase, underscores, remove special chars, fallback defaults
 
+### Git Operations and GitHub Integration
+- Git command execution: Use `subprocess.run()` with `check=True` for error handling
+- Capture output: `capture_output=True, text=True, encoding='utf-8'`
+- GitHub URL parsing patterns:
+  - SSH format: `git@github.com:owner/repo.git`
+  - HTTPS format: `https://github.com/owner/repo.git`
+  - Extract owner/repo by splitting path component after domain
+- GitHub API authentication: Use personal access token in Authorization header
+- Repository operations flow:
+  - Check if directory exists and contains .git folder
+  - Clone if new, pull if exists
+  - Use token authentication for HTTPS: `https://token@github.com/owner/repo.git`
+  - Remove directory if exists but isn't a git repository
+- Branch naming for automation: `{operation-type}-{username}-{timestamp}`
+- Git workflow pattern:
+  - Checkout and pull main branch first
+  - Create feature branch from updated main
+  - Add specific files (not git add .)
+  - Commit with descriptive message
+  - Push branch to origin
+  - Create PR immediately via API
+- PR creation best practices:
+  - Use markdown formatting with headers and lists
+  - Include verification checklists for reviewers
+  - Extract key info from file content for summaries
+  - Add automation disclaimer
+  - Apply labels for categorization (`scim-provisioning`, `needs-review`)
+- Error handling strategies:
+  - Git operations: Catch `subprocess.CalledProcessError`, print command and stderr
+  - API requests: Use `response.raise_for_status()` for HTTP errors
+  - Continue on non-critical errors (e.g., label application failures)
+

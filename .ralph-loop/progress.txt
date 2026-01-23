@@ -847,3 +847,110 @@
 - GroupHandler integrates with YAMLGenerator (Story-13) and UserStore (Story-14) for complete user provisioning
 - Next dependency: Story-16 (GitHandler) for Git operations and PR creation
 
+---
+
+### Iteration 16 - Story-16: Create Git Handler Service
+
+**Date:** 2026-01-23
+
+**Completed:** Story-16 (Create Git Handler Service)
+
+**What was done:**
+- Created scim-bridge/app/services/git_handler.py with comprehensive GitHandler class (400+ lines)
+- Implemented __init__ method accepting repo_url and github_token parameters:
+  - Parses both SSH and HTTPS GitHub repository URLs
+  - Extracts owner and repo name for GitHub API calls
+  - Validates only GitHub repositories are supported
+- Implemented clone_or_pull() method for repository operations:
+  - Creates parent directories if needed
+  - Clones repository if not exists or pulls latest changes if exists
+  - Uses token authentication for HTTPS URLs
+  - Handles existing non-git directories by removing them first
+- Implemented create_pr_for_user() method for user YAML PRs:
+  - Creates unique branch with pattern: 'scim-provision-{username}-{timestamp}'
+  - Writes YAML file to identities/ directory
+  - Commits with descriptive message: 'SCIM: Add/update user identity for {username}'
+  - Pushes branch and creates GitHub PR via API
+  - Applies labels: 'scim-provisioning', 'needs-review'
+  - Generates detailed PR body with user information and verification checklist
+- Implemented create_pr_for_groups() method for group membership PRs:
+  - Creates branch with pattern: 'scim-provision-{username}-groups-{timestamp}'
+  - Stages and commits multiple modified group files
+  - Commits with message: 'SCIM: Update group memberships for {username}'
+  - Creates PR with summary of modified group files
+- Updated scim-bridge/app/services/__init__.py to export GitHandler
+- All methods return GitHub PR URLs as required
+- Comprehensive error handling with subprocess.CalledProcessError for git operations
+- Private helper methods for git commands, PR creation, and body generation
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ File scim-bridge/app/services/git_handler.py created
+  ✅ GitHandler class with __init__ accepting repo_url and github_token
+  ✅ clone_or_pull() method clones or updates repository
+  ✅ create_pr_for_user() method creates branch, commits user YAML, creates PR
+  ✅ create_pr_for_groups() method creates PR for group membership changes
+  ✅ Branch naming: 'scim-provision-{username}-{timestamp}'
+  ✅ Commit messages descriptive and follow conventions
+  ✅ PR creation via GitHub API with labels: 'scim-provisioning', 'needs-review'
+  ✅ PR title and body formatted clearly
+  ✅ Returns PR URL
+- Created comprehensive test suite with 4 test categories - all tests passed
+- Verified URL parsing for both SSH and HTTPS GitHub URLs
+- Verified method signatures and callable status
+- Verified PR body generation with sample data
+
+**Learnings:**
+- Git operations service design patterns:
+  - Use subprocess.run() with check=True for git command execution
+  - Capture stdout/stderr with text=True and encoding='utf-8'
+  - Use pathlib.Path for cross-platform file operations
+  - Handle existing directories vs git repositories (remove if not .git)
+  - Use token authentication in HTTPS URLs: https://token@github.com/owner/repo.git
+- GitHub URL parsing strategies:
+  - SSH format: git@github.com:owner/repo.git
+  - HTTPS format: https://github.com/owner/repo.git
+  - Extract owner/repo for API calls by splitting path component
+  - Validate against supported Git hosting platforms
+- GitHub API integration patterns:
+  - Use requests library for REST API calls
+  - Authorization header: 'Authorization: token {github_token}'
+  - Accept header: 'application/vnd.github.v3+json' for API versioning
+  - Create PR: POST /repos/{owner}/{repo}/pulls with head/base branches
+  - Add labels: POST /repos/{owner}/{repo}/issues/{number}/labels
+  - Handle API errors gracefully (labels might not exist in repo)
+- Branch naming strategy for automation:
+  - Include operation type: 'scim-provision' vs 'scim-provision-groups'
+  - Include username for identification and troubleshooting
+  - Include timestamp for uniqueness: str(int(time.time()))
+  - Use hyphens for readability: 'scim-provision-{username}-{timestamp}'
+- PR body formatting best practices:
+  - Use markdown formatting with headers and checkboxes
+  - Include verification checklists for manual reviewers
+  - Extract key information from YAML content (email, role, team)
+  - Provide clear next steps (terraform plan/apply)
+  - Add automation disclaimer at bottom
+  - Use emojis for visual organization (✅, 🔄, 👥, 🔐)
+- Error handling for external dependencies:
+  - Git operations: Catch subprocess.CalledProcessError with command/stderr
+  - API requests: Use response.raise_for_status() for HTTP errors
+  - File operations: Handle missing directories with mkdir(parents=True)
+  - Provide clear error messages with context about what failed
+- Git workflow automation patterns:
+  - Always checkout main and pull before creating feature branch
+  - Use relative file paths for git add (identities/filename.yaml)
+  - Push branch with same name as local branch (origin branch_name)
+  - Create PRs immediately after push for automated workflows
+- Timestamp generation for uniqueness:
+  - Use int(time.time()) for epoch seconds (sufficient for branch uniqueness)
+  - Convert to string for concatenation in branch names
+  - Avoid datetime formatting (simpler and shorter)
+- String extraction from YAML for PR summaries:
+  - Simple line-by-line parsing with split() for key-value extraction
+  - Check for context (identity: section) to avoid wrong matches
+  - Fallback to 'N/A' for missing optional fields
+  - Handle quoted strings by stripping quotes
+- Story-16 completes the core Git operations layer needed for Story-17 (main.py)
+- GitHandler integrates with YAMLGenerator (Story-13), UserStore (Story-14), and GroupHandler (Story-15) for complete SCIM provisioning workflow
+- The service provides automated PR creation enabling manual review before Terraform applies changes
+
