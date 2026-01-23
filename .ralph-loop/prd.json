@@ -412,7 +412,7 @@
         "Verification steps for each phase",
         "Links to related documentation"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
