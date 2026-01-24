@@ -517,7 +517,7 @@
         "Known limitations and workarounds documented",
         "Recommendations for production deployment added"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

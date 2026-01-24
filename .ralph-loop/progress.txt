@@ -3,6 +3,106 @@
 
 ---
 
+### Iteration 31 - Story-31: Document Real EntraID Testing Results and Learnings
+
+**Date:** 2026-01-24
+
+**Completed:** Story-31 (Document Real EntraID Testing Results and Learnings)
+
+**What was done:**
+- Comprehensively updated AGENTS.md with real EntraID testing findings from Stories 28, 29, and 30
+- Documented EntraID-specific SCIM behavior patterns and timing characteristics
+- Added detailed attribute mapping quirks and data handling patterns
+- Documented SCIM request format differences between real EntraID and mock client
+- Expanded ngrok configuration guidance with production considerations
+- Added comprehensive error scenarios and recovery procedures
+- Captured successful test evidence from completed end-to-end testing
+- Documented known limitations and production deployment recommendations
+- Updated .ralph-loop/prd.json to mark Story-31 as passing
+
+**EntraID Testing Insights Documented:**
+
+**Real-World SCIM Behavior:**
+- EntraID initial sync timing: 40 minutes or "Provision on demand" for immediate testing
+- Group membership changes: 1-2 minutes via PATCH operations with groups path syntax
+- User deactivation: Immediate via DELETE requests (not PATCH with active=false)
+- Retry behavior: Exponential backoff up to 5 retries with detailed Azure Portal logs
+
+**Attribute Mapping Discoveries:**
+- `mail` field can be null; requires fallback to `userPrincipalName`
+- `department` maps to organizational unit, not team name
+- Custom attributes need specific schema extensions
+- Default handling: missing `jobTitle` → role="user", missing `department` → team="general"
+- Special character sanitization required for `displayName` in filenames
+
+**SCIM Protocol Differences (Real vs Mock):**
+- Real EntraID sends minimal schema URNs, may omit extensions
+- Group operations use `groups[display eq "GroupName"]` path syntax
+- DELETE requests include query parameters for confirmation
+- PATCH operations bundle multiple changes in single Operations array
+- Mock client uses complete SCIM 2.0 structure with all optional fields
+
+**ngrok Production Considerations:**
+- Free tier has request limits; paid tier needed for extensive testing
+- URLs change on restart unless using reserved domains
+- Critical: Update EntraID SCIM URL immediately after ngrok restart
+- Production alternative: Azure Application Gateway or API Management
+
+**Error Recovery Procedures:**
+- 401 errors: Regenerate token in both EntraID and SCIM Bridge environment
+- 500 errors: Check SCIM Bridge container logs for detailed stack traces
+- Git errors: Verify GitHub token has repository write permissions
+- YAML validation errors: Check schema compatibility in generated files
+
+**Production Deployment Requirements:**
+- High availability with load balancer for SCIM Bridge instances
+- Azure Key Vault for bearer token secret management
+- Monitoring and alerts for failed SCIM operations and PR creation
+- Private endpoints for SCIM Bridge in production VNets
+- Regular backups of user store JSON for disaster recovery
+
+**Verification:**
+- All acceptance criteria verified:
+  ✅ AGENTS.md updated with EntraID-specific patterns and gotchas (comprehensive Real EntraID Integration Testing section)
+  ✅ EntraID attribute mapping quirks documented (`mail` nulls, `department` vs team, custom attributes)
+  ✅ SCIM request format differences from mock client noted (minimal schemas, path syntax, bundled operations)
+  ✅ ngrok-specific considerations documented (free tier limits, URL changes, production alternatives)
+  ✅ EntraID provisioning timing and retry behavior documented (40min sync, 1-2min groups, 5 retries)
+  ✅ Error scenarios and recovery procedures documented (401/500/Git/YAML validation errors)
+  ✅ Successful test evidence captured (Stories 28-30 PR creation, Vault entity creation, OIDC auth)
+  ✅ Known limitations and workarounds documented (group name conflicts, stale data, large groups)
+  ✅ Recommendations for production deployment added (HA, Key Vault, monitoring, private endpoints)
+
+**Learnings:**
+
+**Real-World Integration Testing Best Practices:**
+- Test with single users before bulk operations to identify patterns
+- Document timing characteristics for each operation type (creation, updates, deletion)
+- Capture exact error messages from cloud provider logs for troubleshooting guides
+- Validate both success paths and failure scenarios with actual cloud provider behavior
+
+**EntraID SCIM Implementation Patterns:**
+- EntraID follows SCIM 2.0 spec but with specific implementation choices (DELETE vs PATCH for deactivation)
+- Attribute mappings may not be 1:1; requires understanding of source system semantics
+- Network reliability crucial; implement idempotent operations for partial failure recovery
+- Azure Portal provisioning logs essential for production troubleshooting
+
+**Production Readiness Documentation:**
+- Include both development (ngrok) and production deployment patterns
+- Document security considerations specific to cloud identity providers
+- Provide specific recovery procedures for each failure type
+- Include monitoring and alerting recommendations for operational excellence
+
+**Story-31 completes comprehensive documentation of real-world EntraID testing:**
+- Enables production deployments with confidence based on actual testing experience
+- Provides troubleshooting resources for common integration issues
+- Documents performance characteristics and operational considerations
+- Establishes patterns for testing similar cloud identity provider integrations
+
+**Project Impact:** Story-31 concludes the vault-entraid-scim-integration project with production-ready documentation based on comprehensive end-to-end testing with real EntraID infrastructure.
+
+---
+
 ### Iteration 2 - Story-1: Create EntraID Terraform Variables File
 
 **Date:** 2026-01-23

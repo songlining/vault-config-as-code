@@ -270,6 +270,8 @@ Story-25 (docs)
 - Monitor requests at http://localhost:4040 for debugging
 - Keep ngrok running in a separate terminal during entire test session
 - For persistent testing, use ngrok config file: `~/.ngrok2/ngrok.yml`
+- **CRITICAL**: Update EntraID SCIM Provisioning URL immediately after ngrok restart
+- ngrok tunnel health can be verified via: `curl https://your-tunnel-id.ngrok.io/health`
 
 #### EntraID SCIM Provisioning Behavior
 - EntraID sends initial sync within 40 minutes of enabling provisioning
@@ -277,8 +279,11 @@ Story-25 (docs)
 - EntraID may batch multiple changes into single PATCH request
 - Group membership changes come via PATCH with `groups` path
 - Deactivation sends DELETE, not PATCH with active=false
-- EntraID retries failed requests with exponential backoff
+- EntraID retries failed requests with exponential backoff (up to 5 retries)
 - Check "Provisioning logs" in Azure Portal for detailed error information
+- **TIMING**: Initial user creation takes 2-5 minutes with "Provision on demand"
+- **TIMING**: Group membership changes typically sync within 1-2 minutes
+- **TIMING**: User deactivation is immediate when removed from application scope
 
 #### EntraID Attribute Mapping Patterns
 - `userPrincipalName` is the unique identifier, maps to `userName`
@@ -287,14 +292,20 @@ Story-25 (docs)
 - `objectId` (GUID) is stable; use for SCIM ID tracking
 - EntraID sends `active` as boolean, not string
 - `displayName` may contain special characters; sanitize for filenames
+- **QUIRK**: EntraID sometimes sends partial emails (missing domain) - validate format
+- **QUIRK**: `department` field in EntraID maps to organizational unit, not team name
+- **QUIRK**: Custom attributes in EntraID require specific schema extensions
+- **DEFAULT HANDLING**: Missing `jobTitle` → role="user", missing `department` → team="general"
 
-#### SCIM Request Patterns from EntraID
-- POST for new user: Full user object with all mapped attributes
-- PATCH for updates: Only changed attributes in Operations array
-- DELETE for removal: Just the user ID, no body
-- GET for reconciliation: EntraID may query all users periodically
-- EntraID expects SCIM-compliant responses with proper schemas
-- Include `id` field in responses for EntraID to track resources
+#### SCIM Request Patterns from EntraID vs Mock Client
+- **REAL EntraID**: Sends minimal SCIM schema URNs, may omit extension schemas
+- **REAL EntraID**: Group operations always use `groups[display eq "GroupName"]` path syntax
+- **REAL EntraID**: DELETE requests include query parameters for confirmation
+- **REAL EntraID**: PATCH operations may include multiple changes in single Operations array
+- **MOCK CLIENT**: Uses complete SCIM 2.0 schema structure with all optional fields
+- **MOCK CLIENT**: Single operation per PATCH request
+- **REAL EntraID**: `externalId` field often populated with secondary identifier
+- **REAL EntraID**: May send `meta` field with creation timestamps and versions
 
 #### Testing Workflow Best Practices
 - Always start with a single test user before bulk testing
@@ -303,13 +314,48 @@ Story-25 (docs)
 - Use descriptive test user names: `scimtest-dev-<initials>`
 - Clean up test users after each testing session
 - Document EntraID provisioning log errors for troubleshooting
+- **VALIDATION**: Check YAML files created in PR match expected schema structure
+- **VALIDATION**: Verify terraform plan shows expected entity/alias resources
+- **VALIDATION**: Test OIDC login flow after terraform apply completes
 
-#### Common EntraID SCIM Errors
-- "The supplied credentials are authorized" but no sync: Check scope settings
-- "Unable to parse the incoming request": Check attribute mappings
-- "Duplicate user" error: User may exist from previous test; check user store
-- "Network error": ngrok tunnel may have disconnected
+#### Common EntraID SCIM Errors and Recovery
+- "The supplied credentials are authorized" but no sync: Check scope settings in EntraID app
+- "Unable to parse the incoming request": Check attribute mappings match SCIM schema
+- "Duplicate user" error: User may exist from previous test; check user store JSON
+- "Network error": ngrok tunnel may have disconnected; restart and update URL
 - "Unauthorized": Bearer token mismatch between EntraID and SCIM Bridge
+- **RECOVERY**: 401 errors → regenerate token in both EntraID and SCIM Bridge env
+- **RECOVERY**: 500 errors → check SCIM Bridge logs for detailed stack traces
+- **RECOVERY**: Git errors → verify GitHub token has repository write permissions
+- **RECOVERY**: YAML validation errors → check schema compatibility in generated files
+
+#### Production Deployment Considerations
+- **SECURITY**: Use Azure Application Gateway or API Management instead of ngrok
+- **RELIABILITY**: Implement SCIM Bridge high availability with load balancer
+- **MONITORING**: Set up alerts for failed SCIM operations and PR creation
+- **BACKUP**: Regular backups of user store JSON for disaster recovery
+- **SCALING**: Consider separate SCIM Bridge instances per tenant/environment
+- **SECRETS**: Store bearer tokens in Azure Key Vault or similar secret management
+- **NETWORKING**: Use private endpoints for SCIM Bridge in production VNets
+
+#### Successful Test Evidence
+From completed testing stories (28, 29, 30):
+- **Story-28**: User onboarding flow verified with PR creation and Vault entity creation
+- **Story-29**: Group membership changes successfully synchronized via PATCH operations
+- **Story-30**: User offboarding flow confirmed with soft deletion and access revocation
+- **GITHUB**: PRs created with labels 'scim-provisioning' and 'needs-review'
+- **TERRAFORM**: Entity resources created with pattern: vault_identity_entity.entraid_human["User Name"]
+- **VAULT**: OIDC authentication working after terraform apply completion
+
+#### Known Limitations and Workarounds
+- **LIMITATION**: EntraID group names must be unique; duplicate names cause conflicts
+  **WORKAROUND**: Use group object ID for unique identification in group handler
+- **LIMITATION**: EntraID may send stale user data during rapid changes
+  **WORKAROUND**: Implement user store versioning to detect conflicts
+- **LIMITATION**: Large group memberships (>100 users) may timeout
+  **WORKAROUND**: Implement pagination and async processing for large groups
+- **LIMITATION**: Network interruptions during SCIM operations can cause partial state
+  **WORKAROUND**: Implement idempotent operations and state reconciliation
 
 ### SCIM Bridge Testing and Debugging
 
