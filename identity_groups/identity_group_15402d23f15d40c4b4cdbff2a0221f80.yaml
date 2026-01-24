@@ -1,0 +1,9 @@
+name: 15402d23-f15d-40c4-b4cd-bff2a0221f80
+contact: scim-provisioning@example.com
+type: internal
+human_identities: []
+application_identities: []
+entraid_human_identities:
+- scim_test_user
+sub_groups: []
+identity_group_policies: []

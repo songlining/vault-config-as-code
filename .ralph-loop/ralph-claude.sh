@@ -221,7 +221,8 @@ IMPORTANT RULES:
     if [[ "$CURRENT_CLI" == "opencode" ]]; then
         # OpenCode uses: opencode run [message..] with -m for model selection
         # Using claude-sonnet-4 via GitHub Copilot provider
-        opencode run -m "github-copilot/claude-sonnet-4" "$prompt" 2>&1 | tee "$output_file" || exit_code=$?
+        # OPENCODE_PERMISSION accepts JSON config: {"*": "allow"} enables autonomous operation
+        OPENCODE_PERMISSION='{"*":"allow"}' opencode run -m "github-copilot/claude-sonnet-4" "$prompt" 2>&1 | tee "$output_file" || exit_code=$?
     else
         # Claude CLI uses: claude --dangerously-skip-permissions -p "$prompt"
         claude --dangerously-skip-permissions -p "$prompt" 2>&1 | tee "$output_file" || exit_code=$?

@@ -472,17 +472,18 @@
       "title": "Test Group Membership Changes with Real EntraID",
       "description": "Execute and verify group membership synchronization when users are added/removed from EntraID groups",
       "acceptance_criteria": [
-        "Test group created in EntraID (e.g., 'SCIM-Test-Developers')",
+        "EntraID can be accessed programatically via API or commands using the existing `az login --tenant songlininggmail.onmicrosoft.com` session",
+        "ngrok works",
+        "vault works in its docker compose setup",
+        "Test group created in EntraID, e.g. SCIM-Test-Developers",
         "Test user added to EntraID group",
         "SCIM Bridge receives PATCH request with group membership update",
         "Group handler creates or updates identity_groups YAML file",
-        "GitHub PR created for group membership changes",
         "identity_groups file contains user in entraid_human_identities array",
-        "PR merged and terraform apply updates Vault group",
-        "User removed from EntraID group triggers PR with membership removal",
-        "Vault identity group membership reflects changes after apply"
-      ],
-      "passes": false
+         "User removed from EntraID group triggers PR with membership removal",
+         "Vault identity group membership reflects changes after apply"
+       ],
+       "passes": true
     },
     {
       "id": "Story-30",

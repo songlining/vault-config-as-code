@@ -1,0 +1,20 @@
+$schema: schema_entraid_human.yaml
+metadata:
+  version: 1.0.0
+  created_date: '2026-01-24'
+  description: EntraID user SCIM Test User provisioned via SCIM
+  entraid_object_id: 698bcd38-9b65-4dde-b88b-87c77c01e3e7
+  entraid_upn: scimtestuser@songlininggmail.onmicrosoft.com
+  provisioned_via_scim: true
+identity:
+  name: SCIM Test User
+  email: scimtestuser@songlininggmail.onmicrosoft.com
+  role: test_developer
+  team: engineering
+  status: active
+authentication:
+  oidc: scimtestuser@songlininggmail.onmicrosoft.com
+  disabled: false
+policies:
+  identity_policies:
+  - test_developer-policy

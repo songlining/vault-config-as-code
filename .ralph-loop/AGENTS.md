@@ -310,3 +310,47 @@ Story-25 (docs)
 - "Duplicate user" error: User may exist from previous test; check user store
 - "Network error": ngrok tunnel may have disconnected
 - "Unauthorized": Bearer token mismatch between EntraID and SCIM Bridge
+
+### SCIM Bridge Testing and Debugging
+
+#### Docker Environment Testing
+- Host port mapping issues don't prevent inter-container communication
+- Services accessible via container names within Docker network
+- Use `docker exec` to run tests from inside containers when host access fails
+- Configure Git user identity in containers: `git config --global user.{name,email}`
+
+#### SCIM Bridge Testing Patterns
+- Test SCIM endpoints directly via Python requests from within containers
+- Verify health endpoint before testing user operations: GET /health
+- Use proper SCIM 2.0 headers: `Authorization: Bearer <token>`, `Content-Type: application/scim+json`
+- Check container logs for detailed error messages: `docker logs scim-bridge --tail=20`
+
+#### Group Membership Testing
+- Group files created using sanitized group IDs as filenames, not display names
+- Group handler creates files like: `identity_group_15402d23f15d40c4b4cdbff2a0221f80.yaml`
+- Users added to `entraid_human_identities` array, separate from `human_identities`
+- Group removal operations properly clear arrays and maintain YAML structure
+
+#### YAML Generation Validation
+- Generated YAML files follow schema with $schema reference
+- SCIM fields correctly mapped: userName→oidc, displayName→name, emails→email
+- Role and team fields sanitized: lowercase, underscores, special chars removed
+- Status mapping: active=true→status="active", active=false→status="deactivated"
+
+#### Terraform Integration
+- Generated identity files automatically discovered by data.local_file.config_files
+- Terraform plan correctly parses both example and SCIM-generated identity files
+- Entity resources created with proper naming: vault_identity_entity.entraid_human["SCIM Test User"]
+- Configuration validation passes with terraform validate
+
+#### Production Deployment Requirements
+- Valid GitHub token required for PR creation (fake tokens cause Git push failures)
+- ngrok tunnel or proper ingress needed for EntraID SCIM provisioning
+- EntraID Enterprise Application must be configured with proper attribute mappings
+- Git user configuration must be set in container environment or Dockerfile
+
+#### Testing Without External Dependencies
+- Use internal Docker network calls to test SCIM endpoints
+- Simulate group membership changes via GroupHandler service methods
+- Verify YAML generation and Git commits without GitHub PR creation
+- Test Terraform configuration parsing with generated files locally

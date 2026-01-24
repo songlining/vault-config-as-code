@@ -9,4 +9,6 @@ services:
     volumes:
       - vault-data:/vault/data
       - vault-logs:/vault/logs
+      # Override the license mount from main compose file
+      - /dev/null:/vault/config/vault.hclic:ro
     command: server -dev -dev-root-token-id=dev-root-token
