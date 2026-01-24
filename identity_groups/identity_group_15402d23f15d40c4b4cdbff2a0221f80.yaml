@@ -3,7 +3,6 @@ contact: scim-provisioning@example.com
 type: internal
 human_identities: []
 application_identities: []
-entraid_human_identities:
-- scim_test_user
+entraid_human_identities: []
 sub_groups: []
 identity_group_policies: []

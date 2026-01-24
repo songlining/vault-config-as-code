@@ -11,10 +11,10 @@ identity:
   email: scimtestuser@songlininggmail.onmicrosoft.com
   role: test_developer
   team: engineering
-  status: active
+  status: deactivated
 authentication:
   oidc: scimtestuser@songlininggmail.onmicrosoft.com
-  disabled: false
+  disabled: true
 policies:
   identity_policies:
   - test_developer-policy
