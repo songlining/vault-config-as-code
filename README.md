@@ -37,8 +37,11 @@ Two-tier certificate authority infrastructure (root + intermediate CA) enabling 
 ### Identity Engine
 OIDC identity provider generating cryptographically signed JWT tokens with rich metadata for zero-trust authentication. Supports API gateway integration and SPIFFE-compliant workload identity with RS256 signing, automatic key rotation, and audience-specific token validation.
 
+### SCIM User Provisioning (EntraID Integration)
+Automated user provisioning from Microsoft EntraID (Azure AD) using SCIM 2.0 protocol. The SCIM Bridge service receives webhooks from EntraID, generates YAML identity files, creates GitHub pull requests for manual review, then applies changes via Terraform to Vault. Users authenticate at runtime via OIDC without storing passwords in Vault. Supports user lifecycle management including onboarding, group membership changes, and deactivation with complete audit trails.
+
 ### Authentication Methods
-Multi-modal authentication supporting GitHub OAuth for human users, AWS IAM roles for cloud services, AppRole for application authentication, and PKI certificate-based authentication for machine identities.
+Multi-modal authentication supporting GitHub OAuth for human users, EntraID OIDC for enterprise directory users, AWS IAM roles for cloud services, AppRole for application authentication, and PKI certificate-based authentication for machine identities. EntraID users can authenticate via OIDC while being provisioned through SCIM workflows.
 
 ### Namespace Management
 Multi-tenant isolation with delegated administration and environment-specific policy enforcement. Each namespace provides complete administrative control while maintaining security boundaries between tenants.
@@ -78,7 +81,23 @@ Username: neo4j
 Password: vaultgraph123
 ```
 
+5. (Optional) Set up SCIM Bridge for EntraID integration:
+```bash
+# Start SCIM Bridge service (requires configuration)
+docker compose up -d scim-bridge
+
+# Configure environment variables for SCIM Bridge
+export SCIM_BEARER_TOKEN="your-bearer-token"
+export GIT_REPO_URL="https://github.com/your-org/vault-config-as-code"
+export GITHUB_TOKEN="your-github-token"
+
+# Test SCIM Bridge health
+curl http://localhost:8080/health
+```
+
 See [Neo4j Quick Start Guide](docs/neo4j_quickstart.md) for a detailed tutorial.
+
+For EntraID SCIM integration setup and configuration, see [SCIM Integration Guide](docs/SCIM_INTEGRATION_GUIDE.md).
 
 ## Usage
 

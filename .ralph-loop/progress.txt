@@ -3,6 +3,97 @@
 
 ---
 
+### Iteration 32 - Story-32: Update README.md and ARCHITECTURE.md for SCIM Support
+
+**Date:** 2026-01-24
+
+**Completed:** Story-32 (Update README.md and ARCHITECTURE.md for SCIM Support)
+
+**What was done:**
+- Updated README.md with comprehensive SCIM integration documentation
+- Added SCIM User Provisioning use case description with automated EntraID workflow
+- Enhanced Authentication Methods section to include EntraID OIDC authentication
+- Added SCIM Bridge setup instructions to Quick Start section
+- Included link to SCIM_INTEGRATION_GUIDE.md for detailed setup instructions
+- Comprehensively updated ARCHITECTURE.md with SCIM Bridge service documentation
+- Added complete directory structure showing SCIM Bridge components and EntraID files
+- Created detailed SCIM provisioning flow diagram showing EntraID → SCIM Bridge → GitHub → Terraform → Vault workflow
+- Documented EntraID identity model with schema differences and Terraform resources
+- Added comprehensive SCIM-to-Vault attribute mapping table with transformations and examples
+- Documented GroupHandler service architecture and group synchronization patterns
+- Updated .ralph-loop/prd.json to mark Story-32 as passing
+
+**SCIM Integration Documentation Added:**
+
+**README.md Updates:**
+- **SCIM User Provisioning Use Case**: Automated provisioning from EntraID via SCIM 2.0 protocol with GitOps workflow
+- **EntraID Authentication**: Added EntraID OIDC to authentication methods with enterprise directory integration
+- **SCIM Bridge Quick Start**: Step-by-step setup instructions with environment variables and health checks
+- **Documentation Links**: Direct reference to SCIM_INTEGRATION_GUIDE.md for complete setup
+
+**ARCHITECTURE.md Enhancements:**
+- **SCIM Bridge Service**: Complete FastAPI microservice with app/, models/, services/, handlers/ structure
+- **EntraID Identity Files**: Added entraid_human_*.yaml files and schema_entraid_human.yaml to directory structure
+- **SCIM Provisioning Flow**: Visual diagram showing complete data flow from EntraID to Vault via GitOps
+- **EntraID Identity Model**: Detailed schema comparison with metadata differences and Terraform resource examples
+- **Attribute Mapping Table**: Comprehensive SCIM-to-YAML transformation rules with sanitization and defaults
+- **GroupHandler Architecture**: Group synchronization patterns with separation of manual vs automated memberships
+
+**Verification:**
+- All acceptance criteria verified and completed:
+  ✅ README.md SCIM integration overview in Use Cases section
+  ✅ README.md EntraID/OIDC in Authentication Methods section  
+  ✅ README.md Quick Start with SCIM Bridge setup instructions
+  ✅ README.md link to SCIM_INTEGRATION_GUIDE.md
+  ✅ ARCHITECTURE.md SCIM Bridge component in directory structure
+  ✅ ARCHITECTURE.md SCIM provisioning flow diagram (EntraID → SCIM Bridge → GitOps → Terraform → Vault)
+  ✅ ARCHITECTURE.md EntraID identity model (entraid_human_*.yaml files and schema)
+  ✅ ARCHITECTURE.md SCIM-to-Vault attribute mapping table with transformations
+  ✅ ARCHITECTURE.md GroupHandler and group synchronization patterns
+  ✅ Both files maintain consistent formatting and style
+
+**Learnings:**
+
+**Documentation Architecture for Complex Integrations:**
+- Layer documentation from high-level overview to detailed technical implementation
+- Start with use case description, then authentication flow, then technical components
+- Provide visual flow diagrams before diving into implementation details
+- Include concrete examples (YAML files, API payloads) alongside conceptual explanations
+
+**Technical Documentation Patterns for SCIM Integration:**
+- Document both provisioning (SCIM) and authentication (OIDC) flows separately but show their relationship  
+- Attribute mapping tables require transformation rules, defaults, and sanitization patterns
+- Group synchronization needs clear separation between manual and automated membership management
+- Directory structure documentation should show generated files (entraid_human_*.yaml) alongside templates
+
+**README.md Enhancement Strategy:**
+- Add new use cases to existing Use Cases section rather than creating new sections
+- Enhance authentication methods incrementally while preserving existing content
+- Quick Start should include optional steps that don't interfere with basic workflow
+- Cross-reference detailed guides for complex integrations
+
+**ARCHITECTURE.md Deep Dive Approach:**
+- Visual diagrams communicate complex workflows better than text descriptions alone
+- Service architecture should show components, data flow, and file operations
+- Identity models benefit from schema comparison tables and Terraform resource examples  
+- Real-world examples (SCIM payloads → YAML output) demonstrate transformation logic
+
+**Cross-Component Integration Documentation:**
+- Show how new components (SCIM Bridge) integrate with existing systems (Vault, Terraform)
+- Document both automated provisioning and runtime authentication paths
+- Explain separation patterns (manual vs automated group memberships) to prevent conflicts
+- Include troubleshooting and operational considerations for production deployments
+
+**Story-32 completes the main documentation updates for SCIM integration:**
+- Provides clear overview and detailed technical reference for implementing EntraID SCIM provisioning
+- Maintains consistency with existing documentation style and organization
+- Enables teams to understand and implement the SCIM Bridge architecture
+- Serves as comprehensive reference for both provisioning and authentication workflows
+
+**Project Impact:** Story-32 finalizes the vault-entraid-scim-integration project documentation, providing complete guidance for implementing automated user provisioning from EntraID to Vault using GitOps principles.
+
+---
+
 ### Iteration 31 - Story-31: Document Real EntraID Testing Results and Learnings
 
 **Date:** 2026-01-24

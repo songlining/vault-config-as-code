@@ -71,15 +71,40 @@ vault-config-as-code/
 │   ├── namespaces.tf              # Namespace module for tenants
 │   ├── identities.tf              # Identity entities and aliases
 │   ├── ldap_identities.tf         # LDAP user identity entities and aliases
+│   ├── entraid_identities.tf      # EntraID user identity entities and aliases
 │   ├── identity_groups.tf         # Identity group definitions (internal + external)
 │   ├── identity_token.tf          # OIDC token configuration
 │   ├── pkiroles.tf                # PKI role definitions
 │   ├── pki-auth.tf                # Certificate authentication backend
 │   ├── ldap-auth.tf               # LDAP authentication backend
 │   ├── ldap_variables.tf          # LDAP configuration variables
+│   ├── entraid-auth.tf            # EntraID OIDC authentication backend
+│   ├── entraid_variables.tf       # EntraID configuration variables
 │   ├── aws_auth_roles.tf          # AWS IAM authentication roles
 │   ├── trusted_orchestrator.tf    # Service account for automation
 │   ├── egp_policy.tf              # Sentinel policy enforcement
+│
+├── SCIM Bridge Service
+│   ├── scim-bridge/               # SCIM Bridge microservice for EntraID integration
+│   │   ├── app/                   # FastAPI application
+│   │   │   ├── main.py            # Main FastAPI app with SCIM endpoints
+│   │   │   ├── config.py          # Environment configuration
+│   │   │   ├── models/            # Pydantic models for SCIM
+│   │   │   │   └── scim_user.py   # SCIM User models
+│   │   │   ├── handlers/          # Request handlers
+│   │   │   │   └── auth.py        # Bearer token authentication
+│   │   │   └── services/          # Business logic services
+│   │   │       ├── yaml_generator.py    # SCIM to YAML conversion
+│   │   │       ├── git_handler.py       # Git operations and PR creation
+│   │   │       ├── group_handler.py     # Group synchronization
+│   │   │       └── user_store.py        # User mapping persistence
+│   │   ├── tests/                 # Unit and integration tests
+│   │   │   ├── test_yaml_generation.py
+│   │   │   └── test_users.py
+│   │   ├── Dockerfile             # Container image definition
+│   │   ├── requirements.txt       # Python dependencies
+│   │   ├── .env.example          # Environment variables template
+│   │   └── mock-entraid-scim-client.py # Testing client
 │
 ├── YAML Configuration Directories
 │   ├── applications/              # Application KV mount definitions
@@ -92,9 +117,11 @@ vault-config-as-code/
 │   ├── identities/                # Human and application identities
 │   │   ├── schema_human.yaml      # JSON Schema for humans
 │   │   ├── schema_application.yaml # JSON Schema for apps
+│   │   ├── schema_entraid_human.yaml # JSON Schema for EntraID users
 │   │   ├── human_*.yaml           # Individual human identities
 │   │   ├── application_*.yaml     # Individual application identities
 │   │   ├── ldap_human_*.yaml      # LDAP user identities
+│   │   ├── entraid_human_*.yaml   # EntraID user identities (SCIM-generated)
 │   │   └── validate_identities.py # Python validation script
 │   │
 │   ├── identity_groups/           # Group definitions with members
@@ -926,7 +953,168 @@ authentication:
 
 policies:
   identity_policies:
-    - developer-policy
+    - "human-identity-token-policies"
+```
+
+### **GroupHandler and Group Synchronization**
+
+The GroupHandler service manages identity group memberships when SCIM events include group changes. It maintains separation between manually managed and SCIM-managed group memberships.
+
+#### **Group Synchronization Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Group Synchronization Flow                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  EntraID Group Change                                                       │
+│  ┌─────────────────────┐    PATCH /Users/{id}    ┌────────────────────────┐ │
+│  │ User added/removed  │ ───────────────────────► │ SCIM Bridge           │ │
+│  │ from EntraID group  │                          │ GroupHandler Service  │ │
+│  └─────────────────────┘                          └───────────┬────────────┘ │
+│                                                               │              │
+│                                                               ▼              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │                    GroupHandler.sync_user_groups()                      │ │
+│  │                                                                         │ │
+│  │  1. Determine target groups from SCIM payload                          │ │
+│  │  2. Find current group memberships in YAML files                       │ │
+│  │  3. Calculate groups to join and groups to leave                       │ │
+│  │  4. Update/create group YAML files                                     │ │
+│  │  5. Return list of modified files for Git commit                       │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  Group File Operations:                                                     │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐                 │
+│  │ Find Existing Group      │  │ Create New Group         │                 │
+│  │ ├─ Load all YAML files   │  │ ├─ Generate group ID     │                 │
+│  │ ├─ Match by display name │  │ ├─ Create YAML structure │                 │
+│  │ └─ Return file path      │  │ └─ Write to file         │                 │
+│  └──────────────────────────┘  └──────────────────────────┘                 │
+│                                                                             │
+│  Membership Management:                                                     │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │ YAML Group Structure (identity_groups/identity_group_*.yaml)            │ │
+│  │                                                                         │ │
+│  │ name: Platform Engineering                                              │ │
+│  │ contact: platform@hashicorp.com                                         │ │
+│  │ type: internal                                                          │ │
+│  │                                                                         │ │
+│  │ human_identities:              # Manual memberships                     │ │
+│  │   - John Doe                                                            │ │
+│  │   - Jane Smith                                                          │ │
+│  │                                                                         │ │
+│  │ entraid_human_identities:      # SCIM-managed memberships              │ │
+│  │   - Alice Brown                # ← Added/removed by GroupHandler        │ │
+│  │   - Bob Wilson                                                          │ │
+│  │                                                                         │ │
+│  │ application_identities: []                                              │ │
+│  │ sub_groups: []                                                          │ │
+│  │ identity_group_policies:                                                │ │
+│  │   - platform-admin                                                      │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### **GroupHandler Service Methods**
+
+**1. `sync_user_groups(user_name, target_groups)`**
+- **Purpose**: Synchronize user's group memberships based on SCIM payload
+- **Process**:
+  - Calculate groups to join: `target_groups - current_memberships`
+  - Calculate groups to leave: `current_memberships - target_groups`
+  - Update YAML files for affected groups
+  - Return list of modified files for Git commit
+
+**2. `remove_user_from_group(user_name, group_name)`**
+- **Purpose**: Remove user from specific group (used for user deactivation)
+- **Process**:
+  - Find group YAML file by display name
+  - Remove user from `entraid_human_identities` array
+  - Preserve manual memberships in `human_identities`
+
+**3. `_find_group_file(group_display_name)`**
+- **Purpose**: Locate existing group YAML file by display name
+- **Process**:
+  - Load all `identity_groups/*.yaml` files
+  - Match by `name` field against group display name
+  - Return file path if found, None otherwise
+
+**4. `_create_group_file(group_display_name)`**
+- **Purpose**: Create new group YAML if not found
+- **Process**:
+  - Generate unique group ID from sanitized name
+  - Create YAML structure with default fields
+  - Write to `identity_groups/identity_group_{group_id}.yaml`
+
+#### **Group Membership Separation Pattern**
+
+The GroupHandler maintains clear separation between different membership sources:
+
+| Array | Management | Purpose | Example |
+|-------|------------|---------|---------|
+| `human_identities` | Manual (Git) | Developer-managed memberships | `["John Doe", "Jane Smith"]` |
+| `entraid_human_identities` | SCIM (Automated) | EntraID-synced memberships | `["Alice Brown", "Bob Wilson"]` |
+| `ldap_human_identities` | LDAP (External) | LDAP-synced memberships | `["ldap.user1", "ldap.user2"]` |
+| `application_identities` | Manual (Git) | Service account memberships | `["api-gateway", "database-service"]` |
+
+**Benefits**:
+- **Non-conflicting**: Manual and automated memberships don't interfere
+- **Auditable**: Clear source attribution for all memberships  
+- **Flexible**: Mix of management approaches in same group
+- **Terraform-friendly**: Uses separate resources with `exclusive = false`
+
+#### **Example Group Synchronization Scenario**
+
+**1. Initial State** (Alice is not in any groups):
+```yaml
+# identity_groups/identity_group_developers.yaml
+name: Developers
+entraid_human_identities: []  # Empty
+human_identities: ["John Doe"]
+```
+
+**2. SCIM Event**: Alice added to "Developers" group in EntraID
+```json
+{
+  "groups": [
+    {"display": "Developers", "value": "group-uuid-1"}
+  ]
+}
+```
+
+**3. GroupHandler Processing**:
+- Target groups: `["Developers"]`
+- Current memberships: `[]`
+- Groups to join: `["Developers"]`
+- Groups to leave: `[]`
+
+**4. Updated Group File**:
+```yaml
+# identity_groups/identity_group_developers.yaml
+name: Developers
+entraid_human_identities: ["Alice Brown"]  # Added by SCIM
+human_identities: ["John Doe"]             # Unchanged
+```
+
+**5. Terraform Resources Created**:
+```hcl
+# Both resources manage the same group with exclusive = false
+resource "vault_identity_group_member_entity_ids" "human_group" {
+  group_id = vault_identity_group.internal_group["developers"].id
+  member_entity_ids = [
+    vault_identity_entity.human["John Doe"].id
+  ]
+  exclusive = false
+}
+
+resource "vault_identity_group_member_entity_ids" "entraid_human_group" {
+  group_id = vault_identity_group.internal_group["developers"].id  
+  member_entity_ids = [
+    vault_identity_entity.entraid_human["Alice Brown"].id
+  ]
+  exclusive = false
+}
 ```
 
 #### **4. External Group** (`identity_groups/identity_group_ldap_*.yaml`)
@@ -1071,6 +1259,382 @@ This means Jane can login via:
 - `vault login -method=github token=ghp_xxx`
 
 Both result in the same identity, policies, and metadata.
+
+### **EntraID Identity Model** (SCIM Integration)
+
+EntraID identities follow a similar pattern to LDAP but with key differences for SCIM provisioning:
+
+#### **1. EntraID Identity Files** (`identities/entraid_human_*.yaml`)
+
+```yaml
+# identities/entraid_human_alice_smith.yaml
+$schema: "./schema_entraid_human.yaml"
+
+metadata:
+  version: "1.0.0"
+  created_date: "2026-01-24"
+  description: "EntraID Human Identity for Alice Smith"
+  entraid_object_id: "12345678-1234-1234-1234-123456789abc"  # Azure AD Object ID
+  entraid_upn: "alice.smith@contoso.onmicrosoft.com"        # User Principal Name
+  provisioned_via_scim: true                                # SCIM provisioning flag
+
+identity:
+  name: "Alice Smith"
+  email: "alice.smith@contoso.com"
+  role: "senior_engineer"                    # Sanitized from EntraID title
+  team: "platform_engineering"              # Sanitized from EntraID department
+  status: "active"                           # Maps from SCIM active boolean
+
+authentication:
+  oidc: "alice.smith@contoso.com"           # Primary auth method (email)
+  github: "alice-gh"                         # Optional multi-auth
+  pki: "alice.smith.contoso.com"            # Optional certificate auth
+  disabled: false                            # Authentication enabled/disabled
+
+policies:
+  identity_policies:
+    - "human-identity-token-policies"
+```
+
+#### **2. Schema Differences** (EntraID vs Standard Human)
+
+| Field | Standard Human | EntraID Human | Purpose |
+|-------|----------------|---------------|---------|
+| **Metadata** | | |
+| `entraid_object_id` | ❌ | ✅ (UUID) | Stable SCIM identifier |
+| `entraid_upn` | ❌ | ✅ (Email) | User Principal Name |
+| `provisioned_via_scim` | ❌ | ✅ (Boolean) | Provisioning method flag |
+| **Identity** | | |
+| `status` | ❌ | ✅ (Enum) | Lifecycle state (active/deactivated) |
+| **Authentication** | | |
+| `oidc` | Optional | ✅ Required | Primary auth for EntraID users |
+| `disabled` | ❌ | ✅ (Boolean) | Soft delete support |
+
+#### **3. Terraform Resources** (`entraid_identities.tf`)
+
+```hcl
+# Identity Entity
+resource "vault_identity_entity" "entraid_human" {
+  for_each = local.entraid_human_identities_map
+  name     = each.key  # "Alice Smith"
+  
+  # Compound disabled logic: auth disabled OR status deactivated
+  disabled = try(each.value.authentication.disabled, false) || 
+             try(each.value.identity.status, "active") == "deactivated"
+  
+  policies = concat(
+    [for i in each.value.policies.identity_policies : i],
+    ["human-identity-token-policies"]
+  )
+  
+  metadata = {
+    role              = each.value.identity.role
+    team              = each.value.identity.team
+    email             = each.value.identity.email
+    status            = each.value.identity.status
+    entraid_upn       = each.value.metadata.entraid_upn
+    entraid_object_id = each.value.metadata.entraid_object_id
+    spiffe_id         = "spiffe://vault/entraid/human/${each.value.identity.role}/${each.value.identity.team}/${each.key}"
+  }
+}
+
+# OIDC Alias (Primary)
+resource "vault_identity_entity_alias" "entraid_human_oidc" {
+  for_each = var.enable_entraid_auth ? local.entraid_human_with_oidc : {}
+  
+  name           = each.value.authentication.oidc
+  mount_accessor = vault_jwt_auth_backend.entraid[0].accessor
+  canonical_id   = vault_identity_entity.entraid_human[each.key].id
+}
+
+# Multi-Auth Support (GitHub, PKI)
+resource "vault_identity_entity_alias" "entraid_human_github" {
+  for_each = local.entraid_human_with_github
+  
+  name           = each.value.authentication.github
+  mount_accessor = vault_github_auth_backend.hashicorp.accessor
+  canonical_id   = vault_identity_entity.entraid_human[each.key].id
+}
+```
+
+#### **4. Data Parsing** (`data.tf`)
+
+```hcl
+# Filter EntraID identities (filename prefix)
+entraid_human_identities_map = {
+  for filename, config in local.configs_by_type.identities :
+  config.identity.name => config
+  if startswith(filename, "entraid_human_")
+}
+
+# Filter for OIDC authentication (with disabled checks)
+entraid_human_with_oidc = {
+  for k, v in local.entraid_human_identities_map :
+  k => v 
+  if try(v.authentication.oidc, null) != null && 
+     v.authentication.oidc != "" &&
+     !try(v.authentication.disabled, false) &&
+     try(v.identity.status, "active") != "deactivated"
+}
+```
+
+#### **5. Group Membership** (`identity_groups.tf`)
+
+```hcl
+# EntraID users in internal groups
+resource "vault_identity_group_member_entity_ids" "entraid_human_group" {
+  for_each = {
+    for group_name, config in local.internal_groups_map :
+    group_name => config
+    if try(length(config.entraid_human_identities), 0) > 0
+  }
+  
+  group_id          = vault_identity_group.internal_group[each.key].id
+  exclusive         = false  # Allow mixing with other identity types
+  member_entity_ids = [
+    for i in each.value.entraid_human_identities : 
+    vault_identity_entity.entraid_human[i].id
+  ]
+}
+```
+
+### **SCIM-to-Vault Attribute Mapping**
+
+The SCIM Bridge transforms EntraID SCIM payloads to Vault identity YAML using the following mappings:
+
+#### **Core Attribute Mapping Table**
+
+| SCIM 2.0 Field | YAML Path | Transformation | Default Value | Notes |
+|----------------|-----------|----------------|---------------|--------|
+| **User Identity** | | | | |
+| `userName` | `authentication.oidc` | Direct copy | *(required)* | Primary email for OIDC auth |
+| `displayName` | `identity.name` | Direct copy | *(required)* | Full name for identity |
+| `emails[0].value` | `identity.email` | Primary email | `authentication.oidc` | Falls back to userName if missing |
+| `title` | `identity.role` | Sanitized | `"user"` | Lowercase, underscores, alphanumeric only |
+| `department` | `identity.team` | Sanitized | `"general"` | Lowercase, underscores, alphanumeric only |
+| `id` (UUID) | `metadata.entraid_object_id` | Direct copy | *(required)* | Stable SCIM identifier |
+| `userName` (UPN) | `metadata.entraid_upn` | Direct copy | *(required)* | User Principal Name |
+| `active` (boolean) | `identity.status` | Boolean to enum | `"active"` | `true` → "active", `false` → "deactivated" |
+| `active` (boolean) | `authentication.disabled` | Inverted | `false` | `true` → `false`, `false` → `true` |
+| **Groups** | | | | |
+| `groups[].display` | Group YAML files | Group sync | *(varies)* | Handled by GroupHandler service |
+| **Metadata** | | | | |
+| *(generated)* | `metadata.version` | Static | `"1.0.0"` | Schema version |
+| *(generated)* | `metadata.created_date` | Timestamp | Current date | ISO date format |
+| *(generated)* | `metadata.provisioned_via_scim` | Static | `true` | SCIM provisioning flag |
+| *(generated)* | `policies.identity_policies` | Static array | `["human-identity-token-policies"]` | Default policies |
+
+#### **Field Sanitization Rules**
+
+**Role and Team Fields** (applies to `title` → `role` and `department` → `team`):
+
+1. **Convert to lowercase**: `"Senior Engineer"` → `"senior engineer"`
+2. **Replace spaces with underscores**: `"senior engineer"` → `"senior_engineer"`
+3. **Remove special characters**: Keep only `[a-z0-9_]`
+4. **Clean consecutive underscores**: `"team__name"` → `"team_name"`
+5. **Strip leading/trailing underscores**: `"_team_"` → `"team"`
+6. **Apply default if empty**: Empty result → use default value
+
+**Example Transformations**:
+```
+"Senior Software Engineer" → "senior_software_engineer"
+"Platform Engineering Team" → "platform_engineering_team"
+"IT-Support & Operations" → "it_support_operations"
+"" (empty) → "user" (default)
+```
+
+**Filename Generation**:
+```
+displayName: "Alice Smith" → filename: "entraid_human_alice_smith.yaml"
+displayName: "José María García-López" → filename: "entraid_human_jose_maria_garcia_lopez.yaml"
+```
+
+#### **SCIM Payload Example**
+
+```json
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "id": "12345678-1234-1234-1234-123456789abc",
+  "userName": "alice.smith@contoso.onmicrosoft.com",
+  "displayName": "Alice Smith",
+  "emails": [
+    {
+      "value": "alice.smith@contoso.com",
+      "type": "work",
+      "primary": true
+    }
+  ],
+  "title": "Senior Software Engineer",
+  "department": "Platform Engineering",
+  "active": true,
+  "groups": [
+    {
+      "value": "group-uuid-1",
+      "display": "Developers"
+    },
+    {
+      "value": "group-uuid-2", 
+      "display": "Platform Team"
+    }
+  ]
+}
+```
+
+#### **Generated YAML Output**
+
+```yaml
+$schema: "./schema_entraid_human.yaml"
+
+metadata:
+  version: "1.0.0"
+  created_date: "2026-01-24"
+  description: "EntraID Human Identity for Alice Smith (SCIM Provisioned)"
+  entraid_object_id: "12345678-1234-1234-1234-123456789abc"
+  entraid_upn: "alice.smith@contoso.onmicrosoft.com"
+  provisioned_via_scim: true
+
+identity:
+  name: "Alice Smith"
+  email: "alice.smith@contoso.com"
+  role: "senior_software_engineer"     # Sanitized from "Senior Software Engineer"
+  team: "platform_engineering"        # Sanitized from "Platform Engineering"
+  status: "active"                     # From active: true
+
+authentication:
+  oidc: "alice.smith@contoso.com"     # From emails[0].value
+  disabled: false                      # From active: true (inverted)
+
+policies:
+  identity_policies:
+    - "human-identity-token-policies"
+```
+
+---
+
+## 🔄 SCIM User Provisioning (EntraID Integration)
+
+### **Overview**
+
+The repository includes a **SCIM Bridge service** that enables automated user provisioning from Microsoft EntraID (Azure AD) to Vault. This implements a GitOps workflow where SCIM events trigger YAML file generation and GitHub pull requests for review before applying changes via Terraform.
+
+### **SCIM Provisioning Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         EntraID SCIM Provisioning Flow                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌────────────────┐    SCIM 2.0     ┌────────────────┐    YAML Gen    ┌────┴────┐
+│  │ Microsoft      │    Events       │ SCIM Bridge    │    & Git Ops   │ GitHub  │
+│  │ EntraID        │◄───────────────►│ (FastAPI)      │◄───────────────►│ Repo    │
+│  │ (Azure AD)     │                 │                │                 │ (PRs)   │
+│  └────────────────┘                 └─────────┬──────┘                 └─────────┘
+│                                               │                               │
+│  User Lifecycle Events:                       │                               │
+│  • User created/updated                       ▼                               │
+│  • Group membership changes           ┌──────────────────┐                    │
+│  • User deactivated                   │ Services:        │                    ▼
+│                                       │ • YAMLGenerator  │         ┌─────────────────┐
+│                                       │ • GitHandler     │         │ Manual Review   │
+│                                       │ • GroupHandler   │         │ & PR Merge      │
+│                                       │ • UserStore      │         └─────────────────┘
+│                                       └──────────────────┘                    │
+│                                                                               │
+│  ┌──────────────────────────────────────────────────────────────────────────┴─┐
+│  │                            Terraform Apply                                  │
+│  │                                                                             │
+│  │  ┌─────────────────┐    Reads YAML    ┌─────────────────┐    Creates   ┌───┴──┐
+│  │  │ entraid_human_  │    Files &       │ Terraform       │    Resources │Vault │
+│  │  │ *.yaml Files    │◄─────────────────┤ Configuration   │─────────────►│      │
+│  │  │ (identities/)   │    Transforms    │                 │              │      │
+│  │  └─────────────────┘                  └─────────────────┘              └──────┘
+│  │                                                                             │
+│  │  Generated Files:                      Vault Resources:                     │
+│  │  • Identity YAML with metadata        • vault_identity_entity              │
+│  │  • Group membership updates           • vault_identity_entity_alias        │
+│  │  • SPIFFE ID generation              • vault_identity_group membership    │
+│  └─────────────────────────────────────────────────────────────────────────────┘
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────────┘
+│  │                      Runtime Authentication                              │
+│  │                                                                          │
+│  │  ┌─────────────────┐    OIDC Login    ┌─────────────────┐   Same Entity  │
+│  │  │ EntraID User    │─────────────────►│ Vault OIDC      │◄──────────────┤
+│  │  │ (Runtime Auth)  │                  │ Backend         │               │
+│  │  └─────────────────┘                  └─────────────────┘               │
+│  │                                                                          │
+│  │  • No passwords stored in Vault                                          │
+│  │  • User authenticates directly with EntraID                              │
+│  │  • Vault receives OIDC token for identity verification                   │
+│  │  • Same policies and metadata from provisioned identity                  │
+│  └───────────────────────────────────────────────────────────────────────────┘
+```
+
+### **SCIM Bridge Service Components**
+
+#### **FastAPI Application** (`scim-bridge/app/main.py`)
+- **POST /scim/v2/Users** - User creation from EntraID
+- **PATCH /scim/v2/Users/{id}** - User updates and group membership changes
+- **DELETE /scim/v2/Users/{id}** - User deactivation (soft delete)
+- **GET /scim/v2/Users** - User reconciliation and listing
+- **GET /health** - Service health check
+
+#### **SCIM-to-YAML Transformation** (`yaml_generator.py`)
+Converts SCIM user payloads to Vault identity YAML files:
+
+```yaml
+# Generated: identities/entraid_human_alice_smith.yaml
+$schema: "./schema_entraid_human.yaml"
+
+metadata:
+  version: "1.0.0"
+  created_date: "2026-01-24"
+  description: "EntraID Human Identity for Alice Smith (SCIM Provisioned)"
+  entraid_object_id: "12345678-1234-1234-1234-123456789abc"
+  entraid_upn: "alice.smith@contoso.onmicrosoft.com"
+  provisioned_via_scim: true
+
+identity:
+  name: "Alice Smith"
+  email: "alice.smith@contoso.com"
+  role: "senior_engineer"
+  team: "platform_engineering"
+  status: "active"
+
+authentication:
+  oidc: "alice.smith@contoso.com"
+  disabled: false
+
+policies:
+  identity_policies:
+    - "human-identity-token-policies"
+```
+
+#### **Group Synchronization** (`group_handler.py`)
+Manages identity group memberships across YAML files:
+- Creates/updates `identity_groups/*.yaml` files
+- Maintains `entraid_human_identities` arrays separate from manual entries
+- Supports group creation if not found
+- Handles group membership additions and removals
+
+#### **Git Operations** (`git_handler.py`)
+Automates GitOps workflow:
+- Creates feature branches: `scim-provision-{username}-{timestamp}`
+- Commits YAML files with descriptive messages
+- Creates GitHub pull requests with review labels
+- Includes verification checklists for reviewers
+
+#### **User Mapping Store** (`user_store.py`)
+Maintains persistent SCIM ID to Vault identity mapping:
+```json
+{
+  "12345678-1234-1234-1234-123456789abc": {
+    "name": "Alice Smith",
+    "filename": "entraid_human_alice_smith.yaml",
+    "created_date": "2026-01-24T10:30:00Z"
+  }
+}
+```
 
 ---
 

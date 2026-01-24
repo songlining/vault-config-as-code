@@ -518,6 +518,24 @@
         "Recommendations for production deployment added"
       ],
       "passes": true
+    },
+    {
+      "id": "Story-32",
+      "title": "Update README.md and ARCHITECTURE.md for SCIM Support",
+      "description": "Update main documentation files to reflect the new SCIM integration capabilities, EntraID authentication, and user provisioning workflow",
+      "acceptance_criteria": [
+        "README.md updated with SCIM integration overview in Use Cases section",
+        "README.md includes EntraID/OIDC in Authentication Methods section",
+        "README.md Quick Start updated with SCIM Bridge setup instructions",
+        "README.md includes link to SCIM_INTEGRATION_GUIDE.md",
+        "ARCHITECTURE.md updated with SCIM Bridge component in directory structure",
+        "ARCHITECTURE.md includes SCIM provisioning flow diagram (YAML → PR → Terraform → Vault)",
+        "ARCHITECTURE.md documents EntraID identity model (entraid_human_*.yaml files)",
+        "ARCHITECTURE.md includes SCIM-to-Vault attribute mapping table",
+        "ARCHITECTURE.md documents GroupHandler and group synchronization pattern",
+        "Both files maintain consistent formatting and style with existing content"
+      ],
+      "passes": true
     }
   ]
 }
