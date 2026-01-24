@@ -963,36 +963,36 @@ The GroupHandler service manages identity group memberships when SCIM events inc
 #### **Group Synchronization Architecture**
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        Group Synchronization Flow                          │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  EntraID Group Change                                                       │
-│  ┌─────────────────────┐    PATCH /Users/{id}    ┌────────────────────────┐ │
-│  │ User added/removed  │ ───────────────────────► │ SCIM Bridge           │ │
-│  │ from EntraID group  │                          │ GroupHandler Service  │ │
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        Group Synchronization Flow                            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  EntraID Group Change                                                        │
+│  ┌─────────────────────┐    PATCH /Users/{id}     ┌────────────────────────┐ │
+│  │ User added/removed  │ ───────────────────────► │ SCIM Bridge            │ │
+│  │ from EntraID group  │                          │ GroupHandler Service   │ │
 │  └─────────────────────┘                          └───────────┬────────────┘ │
 │                                                               │              │
 │                                                               ▼              │
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │                    GroupHandler.sync_user_groups()                      │ │
 │  │                                                                         │ │
-│  │  1. Determine target groups from SCIM payload                          │ │
-│  │  2. Find current group memberships in YAML files                       │ │
-│  │  3. Calculate groups to join and groups to leave                       │ │
-│  │  4. Update/create group YAML files                                     │ │
-│  │  5. Return list of modified files for Git commit                       │ │
+│  │  1. Determine target groups from SCIM payload                           │ │
+│  │  2. Find current group memberships in YAML files                        │ │
+│  │  3. Calculate groups to join and groups to leave                        │ │
+│  │  4. Update/create group YAML files                                      │ │
+│  │  5. Return list of modified files for Git commit                        │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  Group File Operations:                                                     │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐                 │
-│  │ Find Existing Group      │  │ Create New Group         │                 │
-│  │ ├─ Load all YAML files   │  │ ├─ Generate group ID     │                 │
-│  │ ├─ Match by display name │  │ ├─ Create YAML structure │                 │
-│  │ └─ Return file path      │  │ └─ Write to file         │                 │
-│  └──────────────────────────┘  └──────────────────────────┘                 │
-│                                                                             │
-│  Membership Management:                                                     │
+│                                                                              │
+│  Group File Operations:                                                      │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐                  │
+│  │ Find Existing Group      │  │ Create New Group         │                  │
+│  │ ├─ Load all YAML files   │  │ ├─ Generate group ID     │                  │
+│  │ ├─ Match by display name │  │ ├─ Create YAML structure │                  │
+│  │ └─ Return file path      │  │ └─ Write to file         │                  │
+│  └──────────────────────────┘  └──────────────────────────┘                  │
+│                                                                              │
+│  Membership Management:                                                      │
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │ YAML Group Structure (identity_groups/identity_group_*.yaml)            │ │
 │  │                                                                         │ │
@@ -1004,7 +1004,7 @@ The GroupHandler service manages identity group memberships when SCIM events inc
 │  │   - John Doe                                                            │ │
 │  │   - Jane Smith                                                          │ │
 │  │                                                                         │ │
-│  │ entraid_human_identities:      # SCIM-managed memberships              │ │
+│  │ entraid_human_identities:      # SCIM-managed memberships               │ │
 │  │   - Alice Brown                # ← Added/removed by GroupHandler        │ │
 │  │   - Bob Wilson                                                          │ │
 │  │                                                                         │ │
@@ -1013,7 +1013,7 @@ The GroupHandler service manages identity group memberships when SCIM events inc
 │  │ identity_group_policies:                                                │ │
 │  │   - platform-admin                                                      │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### **GroupHandler Service Methods**
@@ -1154,9 +1154,9 @@ User: john.doe authenticates via LDAP
              ▼
 ┌─────────────────────────────────┐
 │ 3. Group Alias Resolution       │
-│    - LDAP group: vault-developers│
-│    - Maps to: "LDAP Developers" │
-│    - Inherits group policies    │
+│   - LDAP group: vault-developers│
+│   - Maps to: "LDAP Developers"  │
+│   - Inherits group policies     │
 └────────────┬────────────────────┘
              │
              ▼

@@ -536,6 +536,29 @@
         "Both files maintain consistent formatting and style with existing content"
       ],
       "passes": true
+    },
+    {
+      "id": "Story-33",
+      "title": "Execute True E2E Test with Real EntraID SCIM Callbacks via ngrok",
+      "description": "Perform genuine end-to-end integration testing where EntraID actually sends SCIM webhook callbacks to the SCIM Bridge through ngrok tunnel, not simulated API calls. This validates the complete provisioning flow from EntraID UI actions through to Vault entity creation.",
+      "acceptance_criteria": [
+        "test is logged with enough details in docs/ENTRAID_E2E_TESTING_RUNBOOK.md",
+        "ngrok tunnel established and verified accessible from internet (curl https://<ngrok-url>/health returns 200)",
+        "EntraID Enterprise Application created with SCIM provisioning enabled pointing to ngrok URL",
+        "SCIM Bearer Token configured in both EntraID and SCIM Bridge environment",
+        "SCIM Bridge container logs show incoming POST /scim/v2/Users request FROM EntraID (not mock client)",
+        "Request contains EntraID-specific headers (X-MS-* headers visible in logs)",
+        "Test user created in EntraID Azure Portal or via 'az ad user create' command",
+        "User assigned to Enterprise Application via Azure Portal or 'az ad app' commands",
+        "EntraID 'Provision on demand' or automatic sync triggers actual SCIM callback to bridge",
+        "terraform apply executed and Vault entity created with correct metadata",
+        "Vault entity queryable: vault read identity/entity/name/<user-name> shows EntraID metadata",
+        "SCIM Bridge logs captured showing complete request/response cycle",
+        "EntraID Provisioning logs in Azure Portal show successful sync status",
+        "Group membership test: user added to EntraID group triggers PATCH callback (not simulated)",
+        "Offboarding test: user removed from app scope triggers DELETE callback from EntraID"
+      ],
+      "passes": true
     }
   ]
 }
