@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault-dev
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "dev-root-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data
+      - vault-logs:/vault/logs
+    command: server -dev -dev-root-token-id=dev-root-token
+    networks:
+      - vault-network
+
+  scim-bridge:
+    build:
+      context: ./scim-bridge
+    container_name: scim-bridge
+    ports:
+      - "8080:8000"
+    environment:
+      SCIM_BEARER_TOKEN: "${SCIM_BEARER_TOKEN:-change-me-in-production}"
+      GIT_REPO_URL: "file:///workspaces/vault-config-as-code"
+      GITHUB_TOKEN: "test-token"
+      LOG_LEVEL: "${LOG_LEVEL:-DEBUG}"
+      REPO_CLONE_DIR: "/data/repo"
+      USER_MAPPING_FILE: "/data/user_mapping.json"
+    volumes:
+      - .:/workspaces/vault-config-as-code:ro
+      - scim-data:/data
+      - scim-logs:/app/logs
+    networks:
+      - vault-network
+    depends_on:
+      - vault
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  vault-data:
+    driver: local
+  vault-logs:
+    driver: local
+  scim-data:
+    driver: local
+  scim-logs:
+    driver: local
+
+networks:
+  vault-network:
+    driver: bridge

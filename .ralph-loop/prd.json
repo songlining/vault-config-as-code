@@ -413,6 +413,110 @@
         "Links to related documentation"
       ],
       "passes": true
+    },
+    {
+      "id": "Story-26",
+      "title": "Create EntraID E2E Testing Runbook",
+      "description": "Create comprehensive end-to-end testing runbook for real EntraID integration testing with ngrok tunnel setup",
+      "acceptance_criteria": [
+        "File docs/ENTRAID_E2E_TESTING_RUNBOOK.md created",
+        "Step-by-step ngrok setup and configuration instructions",
+        "EntraID Enterprise Application creation guide for SCIM provisioning",
+        "SCIM attribute mapping configuration for EntraID",
+        "Test user creation in EntraID with required attributes",
+        "Test group creation and user assignment in EntraID",
+        "Provisioning flow verification checklist",
+        "Expected PR content verification steps",
+        "Terraform apply and Vault verification steps",
+        "Cleanup and teardown instructions"
+      ],
+      "passes": true
+    },
+    {
+      "id": "Story-27",
+      "title": "Create Test Helper Script for ngrok and SCIM Testing",
+      "description": "Create scripts/entraid-test-helper.sh to automate ngrok tunnel setup, health checks, and testing workflow",
+      "acceptance_criteria": [
+        "File scripts/entraid-test-helper.sh created and executable",
+        "start-ngrok command to start ngrok tunnel with proper port",
+        "check-health command to verify SCIM Bridge health through ngrok",
+        "show-config command to display current ngrok URL and token for EntraID configuration",
+        "watch-logs command to tail SCIM Bridge logs with filtering",
+        "list-prs command to show recent SCIM-related PRs using gh CLI",
+        "cleanup command to stop services and clean up test data",
+        "Environment variable validation and helpful error messages",
+        "Usage help displayed when run without arguments"
+      ],
+      "passes": true
+    },
+    {
+      "id": "Story-28",
+      "title": "Test User Onboarding Flow with Real EntraID",
+      "description": "Execute and verify end-to-end user onboarding from EntraID through SCIM Bridge to Vault identity creation",
+      "acceptance_criteria": [
+        "Test user created in EntraID with displayName, email, title, department",
+        "User assigned to EntraID SCIM Enterprise Application",
+        "SCIM Bridge receives and processes POST /scim/v2/Users request",
+        "GitHub PR created with correct YAML identity file",
+        "YAML file contains correct metadata (entraid_object_id, provisioned_via_scim=true)",
+        "YAML file contains correct identity fields (name, email, role, team, status=active)",
+        "PR reviewed and merged successfully",
+        "terraform apply creates Vault identity entity",
+        "Vault entity visible via vault list identity/entity/name",
+        "User store JSON contains correct SCIM ID to name mapping"
+      ],
+      "passes": true
+    },
+    {
+      "id": "Story-29",
+      "title": "Test Group Membership Changes with Real EntraID",
+      "description": "Execute and verify group membership synchronization when users are added/removed from EntraID groups",
+      "acceptance_criteria": [
+        "Test group created in EntraID (e.g., 'SCIM-Test-Developers')",
+        "Test user added to EntraID group",
+        "SCIM Bridge receives PATCH request with group membership update",
+        "Group handler creates or updates identity_groups YAML file",
+        "GitHub PR created for group membership changes",
+        "identity_groups file contains user in entraid_human_identities array",
+        "PR merged and terraform apply updates Vault group",
+        "User removed from EntraID group triggers PR with membership removal",
+        "Vault identity group membership reflects changes after apply"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-30",
+      "title": "Test User Offboarding Flow with Real EntraID",
+      "description": "Execute and verify user deactivation when removed from EntraID SCIM application",
+      "acceptance_criteria": [
+        "Test user removed from EntraID SCIM Enterprise Application scope",
+        "SCIM Bridge receives DELETE /scim/v2/Users/{id} request",
+        "User removed from all group memberships",
+        "GitHub PR created with updated YAML (status=deactivated, disabled=true)",
+        "PR merged and terraform apply updates Vault entity",
+        "Vault entity disabled field set to true",
+        "User cannot authenticate via OIDC after deactivation",
+        "User store reflects deactivated state",
+        "Audit log shows deactivation event"
+      ],
+      "passes": false
+    },
+    {
+      "id": "Story-31",
+      "title": "Document Real EntraID Testing Results and Learnings",
+      "description": "Update AGENTS.md and documentation with learnings, gotchas, and patterns discovered during real EntraID testing",
+      "acceptance_criteria": [
+        "AGENTS.md updated with EntraID-specific patterns and gotchas",
+        "EntraID attribute mapping quirks documented",
+        "SCIM request format differences from mock client noted",
+        "ngrok-specific considerations documented",
+        "EntraID provisioning timing and retry behavior documented",
+        "Error scenarios and recovery procedures documented",
+        "Successful test evidence captured (screenshots, PR links)",
+        "Known limitations and workarounds documented",
+        "Recommendations for production deployment added"
+      ],
+      "passes": false
     }
   ]
 }

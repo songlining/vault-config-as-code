@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  vault:
+    image: hashicorp/vault:latest
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "dev-root-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    volumes:
+      - vault-data:/vault/data
+      - vault-logs:/vault/logs
+    command: server -dev -dev-root-token-id=dev-root-token

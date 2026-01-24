@@ -260,3 +260,53 @@ Story-25 (docs)
 - Use health checks with curl for container orchestration readiness
 - Pin all dependency versions for reproducibility (critical for production)
 - Separate application code (/app) from persistent data (/data) directories
+
+### Real EntraID Integration Testing
+
+#### ngrok Configuration
+- ngrok free tier has request limits; consider paid tier for extensive testing
+- ngrok URLs change on restart unless using reserved domains (paid feature)
+- Use `ngrok http 8080` to expose SCIM Bridge, not the container's internal port 8000
+- Monitor requests at http://localhost:4040 for debugging
+- Keep ngrok running in a separate terminal during entire test session
+- For persistent testing, use ngrok config file: `~/.ngrok2/ngrok.yml`
+
+#### EntraID SCIM Provisioning Behavior
+- EntraID sends initial sync within 40 minutes of enabling provisioning
+- Use "Provision on demand" for immediate single-user testing
+- EntraID may batch multiple changes into single PATCH request
+- Group membership changes come via PATCH with `groups` path
+- Deactivation sends DELETE, not PATCH with active=false
+- EntraID retries failed requests with exponential backoff
+- Check "Provisioning logs" in Azure Portal for detailed error information
+
+#### EntraID Attribute Mapping Patterns
+- `userPrincipalName` is the unique identifier, maps to `userName`
+- `mail` may be null for some users; use fallback to `userPrincipalName`
+- `jobTitle` and `department` may be null; provide defaults in YAML generator
+- `objectId` (GUID) is stable; use for SCIM ID tracking
+- EntraID sends `active` as boolean, not string
+- `displayName` may contain special characters; sanitize for filenames
+
+#### SCIM Request Patterns from EntraID
+- POST for new user: Full user object with all mapped attributes
+- PATCH for updates: Only changed attributes in Operations array
+- DELETE for removal: Just the user ID, no body
+- GET for reconciliation: EntraID may query all users periodically
+- EntraID expects SCIM-compliant responses with proper schemas
+- Include `id` field in responses for EntraID to track resources
+
+#### Testing Workflow Best Practices
+- Always start with a single test user before bulk testing
+- Verify ngrok tunnel health before configuring EntraID
+- Save SCIM_BEARER_TOKEN securely; regenerate after testing
+- Use descriptive test user names: `scimtest-dev-<initials>`
+- Clean up test users after each testing session
+- Document EntraID provisioning log errors for troubleshooting
+
+#### Common EntraID SCIM Errors
+- "The supplied credentials are authorized" but no sync: Check scope settings
+- "Unable to parse the incoming request": Check attribute mappings
+- "Duplicate user" error: User may exist from previous test; check user store
+- "Network error": ngrok tunnel may have disconnected
+- "Unauthorized": Bearer token mismatch between EntraID and SCIM Bridge
