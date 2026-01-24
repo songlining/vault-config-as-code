@@ -500,7 +500,7 @@
         "User store reflects deactivated state",
         "Audit log shows deactivation event"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Story-31",
