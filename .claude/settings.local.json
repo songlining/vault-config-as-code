@@ -27,7 +27,8 @@
       "Bash(timeout 180 terraform apply:*)",
       "Bash(docker network inspect:*)",
       "Bash(netstat:*)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []
