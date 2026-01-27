@@ -1,0 +1,20 @@
+$schema: /app/data/vault-config-repo/identities/schema_entraid_human.yaml
+metadata:
+  version: 1.0.0
+  created_date: '2026-01-27'
+  description: EntraID user E2E Test User provisioned via SCIM
+  entraid_object_id: e2e-test-user-1769489494
+  entraid_upn: e2etest@contoso.com
+  provisioned_via_scim: true
+identity:
+  name: E2E Test User
+  email: e2etest@contoso.com
+  role: software_engineer
+  team: engineering
+  status: active
+authentication:
+  oidc: e2etest@contoso.com
+  disabled: false
+policies:
+  identity_policies:
+  - software_engineer-policy
