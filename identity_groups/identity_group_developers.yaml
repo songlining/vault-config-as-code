@@ -1,0 +1,9 @@
+name: Developers
+contact: scim-provisioning@example.com
+type: internal
+human_identities: []
+application_identities: []
+entraid_human_identities:
+- Alice Johnson
+sub_groups: []
+identity_group_policies: []
