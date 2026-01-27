@@ -1,0 +1,9 @@
+name: Developers
+contact: scim-provisioning@example.com
+type: internal
+human_identities: []
+application_identities: []
+entraid_human_identities:
+- E2E Test User
+sub_groups: []
+identity_group_policies: []
