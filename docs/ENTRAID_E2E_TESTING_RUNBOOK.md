@@ -240,17 +240,9 @@ Open http://localhost:4040 in your browser to monitor incoming requests from Ent
 
 ## Part 3: Configure EntraID Enterprise Application
 
-> **Automation Available:** Most of Part 3 can be automated using the setup script:
-> ```bash
-> ./scripts/setup-entraid-scim-app.sh setup <ngrok-url>
-> ```
-> See script header for prerequisites. Manual steps below are for reference or if automation fails.
-
-### Script-Based Automation (Recommended)
-
 The `setup-entraid-scim-app.sh` script automates the creation and configuration of the EntraID Enterprise Application, test user, and test group.
 
-#### Prerequisites
+### Prerequisites
 
 1. **Azure CLI** logged in to your tenant:
    ```bash
@@ -273,7 +265,7 @@ The `setup-entraid-scim-app.sh` script automates the creation and configuration 
 
 4. **Azure AD permissions**: Application Administrator or Global Administrator role
 
-#### Usage
+### Setup
 
 1. **Run the setup script** with your ngrok URL:
    ```bash
@@ -282,38 +274,27 @@ The `setup-entraid-scim-app.sh` script automates the creation and configuration 
 
 2. **Review the output** for created resources:
    - App Registration ID
-   - Service Principal ID  
+   - Service Principal ID
    - Test user credentials
    - Test group information
    - SCIM configuration details
 
-3. **Complete manual SCIM configuration** in Azure Portal (if API configuration fails):
-   ```bash
-   # The script will output instructions like:
-   # 1. Go to Azure Portal > Enterprise Applications > 'Vault SCIM Provisioning (Test)'
-   # 2. Click 'Provisioning' in the left sidebar
-   # 3. Set Provisioning Mode to 'Automatic'
-   # 4. Enter Tenant URL: https://abc123.ngrok-free.app/scim/v2
-   # 5. Enter Secret Token: <generated-token>
-   # 6. Click 'Test Connection' then 'Save'
-   ```
-
-4. **Check status** anytime:
+3. **Check status** anytime:
    ```bash
    ./scripts/setup-entraid-scim-app.sh status
    ```
 
-5. **Start provisioning** (after manual Azure Portal configuration):
+4. **Start provisioning**:
    ```bash
    ./scripts/setup-entraid-scim-app.sh start-provisioning
    ```
 
-6. **Trigger on-demand provisioning** for immediate testing:
+5. **Trigger on-demand provisioning** for immediate testing:
    ```bash
    ./scripts/setup-entraid-scim-app.sh provision-user
    ```
 
-#### Expected Output
+### Expected Output
 
 The script creates these resources:
 
@@ -321,12 +302,12 @@ The script creates these resources:
 - **Service Principal**: Enterprise Application for SCIM provisioning
 - **Test User**: `scimtestuser@<your-tenant>.onmicrosoft.com`
   - Display Name: `SCIM Test User`
-  - Job Title: `Software Engineer` 
+  - Job Title: `Software Engineer`
   - Department: `Platform Engineering`
 - **Test Group**: `SCIM-Test-Developers`
 - **SCIM Configuration**: Bearer token and endpoint URL
 
-#### Cleanup
+### Cleanup
 
 When testing is complete:
 ```bash
@@ -335,82 +316,19 @@ When testing is complete:
 
 This removes all created Azure AD resources and local state.
 
-### Step 1: Create Enterprise Application
-
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Microsoft Entra ID** > **Enterprise applications**
-3. Click **+ New application**
-4. Click **+ Create your own application**
-5. Name: `Vault SCIM Provisioning (Test)`
-6. Select: **Integrate any other application you don't find in the gallery (Non-gallery)**
-7. Click **Create**
-
-### Step 2: Configure Provisioning
-
-1. In your new application, go to **Provisioning** (left sidebar)
-2. Click **Get started**
-3. Set **Provisioning Mode** to **Automatic**
-4. Under **Admin Credentials**:
-   - **Tenant URL**: `https://YOUR_NGROK_URL/scim/v2` (e.g., `https://abc123.ngrok-free.app/scim/v2`)
-   - **Secret Token**: Paste your `$SCIM_BEARER_TOKEN` value
-5. Click **Test Connection**
-   - Should show: "The supplied credentials are authorized to enable provisioning"
-6. Click **Save**
-
-### Step 3: Configure Attribute Mappings
-
-1. Expand **Mappings**
-2. Click **Provision Azure Active Directory Users**
-3. Verify/configure these mappings:
-
-| Azure AD Attribute | SCIM Attribute | Notes |
-|-------------------|----------------|-------|
-| `userPrincipalName` | `userName` | Required - used for OIDC |
-| `displayName` | `displayName` | Required - user's full name |
-| `mail` | `emails[type eq "work"].value` | Primary email |
-| `jobTitle` | `title` | Maps to role in Vault |
-| `department` | `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department` | Maps to team in Vault |
-| `Switch([IsSoftDeleted], , "False", "True", "True", "False")` | `active` | Required for deactivation |
-| `objectId` | `externalId` | EntraID object ID |
-
-4. Click **Save**
-
-### Step 4: Configure Provisioning Scope
-
-1. Under **Settings**:
-   - **Scope**: Select **Sync only assigned users and groups**
-   - **Provisioning Status**: Keep as **Off** for now
-2. Click **Save**
-
-### Step 5: Create Test User in EntraID
-
-1. Go to **Microsoft Entra ID** > **Users** > **+ New user** > **Create new user**
-2. Fill in details:
-   - **User principal name**: `scimtest@yourdomain.com`
-   - **Display name**: `SCIM Test User`
-   - **First name**: `SCIM`
-   - **Last name**: `Test User`
-   - **Job title**: `Software Engineer`
-   - **Department**: `Platform Engineering`
-3. Click **Create**
-
-### Step 6: Assign Test User to Application
-
-1. Go back to your Enterprise Application
-2. Navigate to **Users and groups** (left sidebar)
-3. Click **+ Add user/group**
-4. Select your test user (`SCIM Test User`)
-5. Click **Assign**
-
 ---
 
 ## Part 4: Test User Onboarding
 
 ### Step 1: Start Provisioning
 
-1. In your Enterprise Application, go to **Provisioning**
-2. Click **Start provisioning**
-3. Wait 1-2 minutes for initial sync (or click **Provision on demand** for immediate test)
+```bash
+# Start provisioning via script
+./scripts/setup-entraid-scim-app.sh start-provisioning
+
+# Or trigger on-demand provisioning for immediate test
+./scripts/setup-entraid-scim-app.sh provision-user
+```
 
 ### Step 2: Monitor SCIM Bridge Logs
 
@@ -482,29 +400,23 @@ policies:
 
 ## Part 5: Test Group Membership Changes
 
-### Step 1: Create Test Group in EntraID
+The setup script automatically creates the test group `SCIM-Test-Developers` and assigns the test user to it.
 
-1. Go to **Microsoft Entra ID** > **Groups** > **+ New group**
-2. Create group:
-   - **Group type**: Security
-   - **Group name**: `Vault-Developers`
-   - **Group description**: `Test group for SCIM provisioning`
-3. Click **Create**
+### Step 1: Verify Group Setup
 
-### Step 2: Add User to Group
+```bash
+# Check the script status to see group information
+./scripts/setup-entraid-scim-app.sh status
+```
 
-1. Open the new group
-2. Click **Members** > **+ Add members**
-3. Select `SCIM Test User`
-4. Click **Select**
+### Step 2: Trigger Provisioning Sync
 
-### Step 3: Trigger Provisioning Sync
+```bash
+# Trigger on-demand provisioning
+./scripts/setup-entraid-scim-app.sh provision-user
+```
 
-1. Go to Enterprise Application > **Provisioning**
-2. Click **Provision on demand** (or wait for automatic sync)
-3. Select the test user and click **Provision**
-
-### Step 4: Monitor for Group Update
+### Step 3: Monitor for Group Update
 
 ```bash
 # Watch SCIM Bridge logs
@@ -518,10 +430,10 @@ docker logs -f scim-bridge
 
 ### Step 5: Verify Group PR
 
-The PR should update `identity_groups/identity_group_vault_developers.yaml`:
+The PR should update `identity_groups/identity_group_scim_test_developers.yaml`:
 
 ```yaml
-name: vault_developers
+name: scim_test_developers
 contact: admin@example.com
 type: internal
 human_identities: []
@@ -546,10 +458,20 @@ policies:
 
 ### Step 1: Remove User from Application
 
-1. Go to Enterprise Application > **Users and groups**
-2. Select your test user
-3. Click **Remove**
-4. Confirm removal
+```bash
+# Use the cleanup script to remove the test user from the application
+# This triggers the offboarding flow
+./scripts/setup-entraid-scim-app.sh cleanup
+```
+
+Alternatively, you can remove just the user assignment while keeping the app:
+```bash
+# Get the test user ID from state
+cat .entraid-scim-state.json | jq -r '.test_user_id'
+
+# Remove user from app assignment via Azure CLI
+az ad app assignment delete --id <sp-id> --assignment-id <assignment-id>
+```
 
 ### Step 2: Monitor for Deactivation
 
