@@ -3,7 +3,7 @@ metadata:
   version: 1.0.0
   created_date: '2026-01-27'
   description: EntraID user Alice Johnson provisioned via SCIM
-  entraid_object_id: 983095b4-d06c-47d2-8f68-deb8ce9bab5c
+  entraid_object_id: 966f1e01-04a0-4efd-9978-f3e0f67bc988
   entraid_upn: alice.johnson@contoso.com
   provisioned_via_scim: true
 identity:
