@@ -1,0 +1,20 @@
+$schema: /app/data/vault-config-repo/identities/schema_entraid_human.yaml
+metadata:
+  version: 1.0.0
+  created_date: '2026-01-27'
+  description: EntraID user Alice Johnson provisioned via SCIM
+  entraid_object_id: 983095b4-d06c-47d2-8f68-deb8ce9bab5c
+  entraid_upn: alice.johnson@contoso.com
+  provisioned_via_scim: true
+identity:
+  name: Alice Johnson
+  email: alice.johnson@contoso.com
+  role: senior_software_engineer
+  team: platform_engineering
+  status: active
+authentication:
+  oidc: alice.johnson@contoso.com
+  disabled: false
+policies:
+  identity_policies:
+  - senior_software_engineer-policy
