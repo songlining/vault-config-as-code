@@ -39,7 +39,9 @@
       "Bash(jq:*)",
       "Bash(cd:*)",
       "Bash(mkdir:*)",
-      "Bash(pytest:*)"
+      "Bash(pytest:*)",
+      "Bash(az account show:*)",
+      "Bash(docker ps:*)"
     ],
     "deny": [],
     "ask": []

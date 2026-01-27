@@ -39,18 +39,50 @@ ngrok version            # ngrok 3.x+
 terraform version        # Terraform 1.10+
 vault version            # Vault 1.15+ (for CLI testing)
 gh --version             # GitHub CLI (optional but helpful)
+az --version             # Azure CLI (for automation script)
+```
+
+### ngrok Setup
+
+ngrok requires authentication before use:
+
+1. **Sign up** at https://dashboard.ngrok.com/signup
+2. **Get your authtoken** from https://dashboard.ngrok.com/get-started/your-authtoken
+3. **Configure ngrok:**
+   ```bash
+   ngrok config add-authtoken <your-authtoken>
+   ```
+4. **Verify:** `ngrok http 8080` should start without authentication errors
+
+### Azure CLI Setup
+
+```bash
+# Login to your Azure tenant
+az login --tenant <your-tenant>.onmicrosoft.com
+
+# Example:
+az login --tenant songlininggmail.onmicrosoft.com
+
+# Verify login
+az account show
 ```
 
 ### Environment Variables Setup
 
-Create a `.env` file in the project root (this file is gitignored):
+Create a `.env` file in the project root (this file is gitignored).
 
+**Format for docker-compose** (no `export` keyword):
 ```bash
 # .env file - DO NOT COMMIT
-export SCIM_BEARER_TOKEN="$(openssl rand -base64 32)"
-export GITHUB_TOKEN="ghp_your_github_token_here"
-export GIT_REPO_URL="https://github.com/YOUR_ORG/vault-config-as-code.git"
+# Generate token: openssl rand -base64 32
+SCIM_BEARER_TOKEN=your-generated-token-here
+GITHUB_TOKEN=ghp_your_github_token_here
+GIT_REPO_URL=https://github.com/YOUR_ORG/vault-config-as-code.git
+LOG_LEVEL=DEBUG
+```
 
+**Additional variables for shell scripts** (create a separate file or add to above):
+```bash
 # EntraID OIDC (for Vault authentication testing)
 export ENTRAID_TENANT_ID="your-tenant-id-here"
 export ENTRAID_CLIENT_ID="your-client-id-here"
@@ -61,10 +93,18 @@ export VAULT_ADDR="http://localhost:8200"
 export VAULT_TOKEN="dev-root-token"
 ```
 
-Load the environment:
+**Quick setup:**
 ```bash
-source .env
-echo "SCIM Bearer Token (save this for EntraID): $SCIM_BEARER_TOKEN"
+# Generate a bearer token
+SCIM_TOKEN=$(openssl rand -base64 32)
+echo "SCIM_BEARER_TOKEN=${SCIM_TOKEN}" > .env
+echo "GIT_REPO_URL=https://github.com/YOUR_ORG/vault-config-as-code.git" >> .env
+echo "GITHUB_TOKEN=ghp_your_token_here" >> .env
+echo "LOG_LEVEL=DEBUG" >> .env
+
+# Verify
+cat .env
+echo "Save this SCIM_BEARER_TOKEN for EntraID configuration: ${SCIM_TOKEN}"
 ```
 
 ---
@@ -199,6 +239,101 @@ Open http://localhost:4040 in your browser to monitor incoming requests from Ent
 ---
 
 ## Part 3: Configure EntraID Enterprise Application
+
+> **Automation Available:** Most of Part 3 can be automated using the setup script:
+> ```bash
+> ./scripts/setup-entraid-scim-app.sh setup <ngrok-url>
+> ```
+> See script header for prerequisites. Manual steps below are for reference or if automation fails.
+
+### Script-Based Automation (Recommended)
+
+The `setup-entraid-scim-app.sh` script automates the creation and configuration of the EntraID Enterprise Application, test user, and test group.
+
+#### Prerequisites
+
+1. **Azure CLI** logged in to your tenant:
+   ```bash
+   az login --tenant <your-tenant>.onmicrosoft.com
+   # Example: az login --tenant songlininggmail.onmicrosoft.com
+   ```
+
+2. **ngrok tunnel** running (see Part 2):
+   ```bash
+   ngrok http 8080  # Expose SCIM Bridge
+   ```
+
+3. **Project environment** configured in `.env` file:
+   ```bash
+   SCIM_BEARER_TOKEN=<generated-or-custom-token>
+   GIT_REPO_URL=https://github.com/<your-org>/vault-config-as-code.git
+   GITHUB_TOKEN=ghp_<your-github-token>
+   LOG_LEVEL=DEBUG
+   ```
+
+4. **Azure AD permissions**: Application Administrator or Global Administrator role
+
+#### Usage
+
+1. **Run the setup script** with your ngrok URL:
+   ```bash
+   ./scripts/setup-entraid-scim-app.sh setup https://abc123.ngrok-free.app
+   ```
+
+2. **Review the output** for created resources:
+   - App Registration ID
+   - Service Principal ID  
+   - Test user credentials
+   - Test group information
+   - SCIM configuration details
+
+3. **Complete manual SCIM configuration** in Azure Portal (if API configuration fails):
+   ```bash
+   # The script will output instructions like:
+   # 1. Go to Azure Portal > Enterprise Applications > 'Vault SCIM Provisioning (Test)'
+   # 2. Click 'Provisioning' in the left sidebar
+   # 3. Set Provisioning Mode to 'Automatic'
+   # 4. Enter Tenant URL: https://abc123.ngrok-free.app/scim/v2
+   # 5. Enter Secret Token: <generated-token>
+   # 6. Click 'Test Connection' then 'Save'
+   ```
+
+4. **Check status** anytime:
+   ```bash
+   ./scripts/setup-entraid-scim-app.sh status
+   ```
+
+5. **Start provisioning** (after manual Azure Portal configuration):
+   ```bash
+   ./scripts/setup-entraid-scim-app.sh start-provisioning
+   ```
+
+6. **Trigger on-demand provisioning** for immediate testing:
+   ```bash
+   ./scripts/setup-entraid-scim-app.sh provision-user
+   ```
+
+#### Expected Output
+
+The script creates these resources:
+
+- **App Registration**: `Vault SCIM Provisioning (Test)`
+- **Service Principal**: Enterprise Application for SCIM provisioning
+- **Test User**: `scimtestuser@<your-tenant>.onmicrosoft.com`
+  - Display Name: `SCIM Test User`
+  - Job Title: `Software Engineer` 
+  - Department: `Platform Engineering`
+- **Test Group**: `SCIM-Test-Developers`
+- **SCIM Configuration**: Bearer token and endpoint URL
+
+#### Cleanup
+
+When testing is complete:
+```bash
+./scripts/setup-entraid-scim-app.sh cleanup
+```
+
+This removes all created Azure AD resources and local state.
 
 ### Step 1: Create Enterprise Application
 
@@ -728,7 +863,7 @@ Use this section to track your test execution:
 
 **7. Error Handling**
 - ✅ Proper SCIM error responses for authentication failures
-- ✅ Detailed error logging for troubleshooting
+- ✅ Detailed error logging for troubleshootig
 - ✅ Git operation error handling (expected with fake tokens)
 
 #### 🔍 Test Evidence Captured

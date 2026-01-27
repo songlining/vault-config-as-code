@@ -17,6 +17,11 @@
       "version": "latest",
       "helm": "latest",
       "minikube": "none"
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
     }
   },
 
@@ -42,7 +47,7 @@
     }
   },
 
-  "postCreateCommand": "curl -fsSL https://opencode.ai/install | bash",
+  "postCreateCommand": "curl -fsSL https://opencode.ai/install | bash && curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo 'deb https://ngrok-agent.s3.amazonaws.com buster main' | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install ngrok -y && wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && echo 'deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com '$(lsb_release -cs)' main' | sudo tee /etc/apt/sources.list.d/hashicorp.list && sudo apt update && sudo apt install vault terraform -y",
 
   "containerEnv": {
     "SHELL": "/bin/zsh"

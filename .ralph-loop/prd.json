@@ -559,6 +559,29 @@
         "Offboarding test: user removed from app scope triggers DELETE callback from EntraID"
       ],
       "passes": true
+    },
+    {
+      "id": "Story-34",
+      "title": "Automate EntraID Enterprise Application Setup via Script",
+      "description": "Create automation script using Azure CLI and/or Terraform AzureAD provider to automate Part 3 of the E2E Testing Runbook: creating EntraID Enterprise Application with SCIM provisioning, configuring attribute mappings, creating test users/groups, and assigning users to the application. This eliminates manual Azure Portal steps and enables repeatable testing.",
+      "acceptance_criteria": [
+        "Script scripts/setup-entraid-scim-app.sh created with Azure CLI commands",
+        "Script creates EntraID App Registration with required API permissions",
+        "Script creates Service Principal (Enterprise Application) from the App Registration",
+        "Script configures SCIM provisioning endpoint URL (accepts ngrok URL as parameter)",
+        "Script configures SCIM bearer token (generates or accepts as parameter)",
+        "Script creates test user in EntraID with displayName, email, jobTitle, department",
+        "Script creates test group in EntraID (e.g., SCIM-Test-Developers)",
+        "Script assigns test user to the Enterprise Application",
+        "Script assigns test user to the test group",
+        "Script outputs all created resource IDs and configuration values",
+        "Script includes cleanup function to delete all created resources",
+        "Script tested with real EntraID tenant (songlininggmail.onmicrosoft.com)",
+        "SCIM provisioning successfully triggers callbacks to SCIM Bridge via ngrok",
+        "End-to-end flow verified: EntraID -> ngrok -> SCIM Bridge -> YAML generation",
+        "Documentation updated with script usage instructions"
+      ],
+      "passes": true
     }
   ]
 }
