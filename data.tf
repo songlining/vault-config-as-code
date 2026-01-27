@@ -145,7 +145,7 @@ locals {
 
   ldap_human_with_github = {
     for k, v in local.ldap_human_identities_map :
-    k => v if try(v.authentication.github, null) != null && v.authentication.github != ""
+    k => v if try(v.authentication.github, null) != null && try(v.authentication.github, "") != ""
   }
 
   # EntraID human identities (files starting with entraid_human_)
@@ -161,15 +161,9 @@ locals {
     k => v if try(v.authentication.oidc, null) != null && v.authentication.oidc != "" && !try(v.authentication.disabled, false) && try(v.identity.status, "active") != "deactivated"
   }
 
-  entraid_human_with_github = {
-    for k, v in local.entraid_human_identities_map :
-    k => v if try(v.authentication.github, null) != null && v.authentication.github != ""
-  }
+  entraid_human_with_github = {}
 
-  entraid_human_with_pki = {
-    for k, v in local.entraid_human_identities_map :
-    k => v if try(v.authentication.pki, null) != null && v.authentication.pki != ""
-  }
+  entraid_human_with_pki = {}
 }
 
 # Output for debugging and validation

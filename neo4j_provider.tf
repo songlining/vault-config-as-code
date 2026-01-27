@@ -21,8 +21,8 @@ resource "null_resource" "neo4j_connectivity_check" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "Testing Neo4j connectivity..."
-      cypher-shell -a ${var.neo4j_url} -u ${var.neo4j_username} -p ${var.neo4j_password} \
+      echo "Testing Neo4j connectivity via Docker..."
+      docker exec neo4j-vault-graph cypher-shell -u ${var.neo4j_username} -p ${var.neo4j_password} \
         "RETURN 'Neo4j connection successful' as message" || \
         (echo "ERROR: Cannot connect to Neo4j. Please ensure Neo4j is running (docker-compose up -d)" && exit 1)
     EOT

@@ -3,16 +3,35 @@
 # suitable for creating graph database nodes and relationships
 
 locals {
-  # Flatten human-to-group memberships for easy relationship creation
+  # Combined human identities map for Neo4j (regular + EntraID)
+  all_human_identities_map = merge(local.human_identities_map, local.entraid_human_identities_map)
+
+  # Flatten human-to-group memberships for easy relationship creation (regular humans)
   human_group_memberships = flatten([
     for group_name, group_config in local.identity_groups_map : [
-      for human_name in group_config.human_identities : {
-        human_name = human_name
-        group_name = group_name
-        key        = "${human_name}__${group_name}"
+      for human_name in try(group_config.human_identities, []) : {
+        human_name    = human_name
+        group_name    = group_name
+        key           = "${human_name}__${group_name}"
+        identity_type = "regular"
       }
     ]
   ])
+
+  # Flatten EntraID human-to-group memberships
+  entraid_human_group_memberships = flatten([
+    for group_name, group_config in local.identity_groups_map : [
+      for human_name in try(group_config.entraid_human_identities, []) : {
+        human_name    = human_name
+        group_name    = group_name
+        key           = "${human_name}__${group_name}_entraid"
+        identity_type = "entraid"
+      }
+    ]
+  ])
+
+  # Combined human group memberships
+  all_human_group_memberships = concat(local.human_group_memberships, local.entraid_human_group_memberships)
 
   # Flatten application-to-group memberships
   app_group_memberships = flatten([
@@ -38,9 +57,14 @@ locals {
 
   # Extract all unique policies from identities and groups
   all_policies = distinct(concat(
-    # Policies from human identities
+    # Policies from regular human identities
     flatten([
       for human_name, human in local.human_identities_map :
+      human.policies.identity_policies
+    ]),
+    # Policies from EntraID human identities  
+    flatten([
+      for human_name, human in local.entraid_human_identities_map :
       human.policies.identity_policies
     ]),
     # Policies from application identities
@@ -55,16 +79,32 @@ locals {
     ])
   ))
 
-  # Map human identities to their policies for relationship creation
+  # Map regular human identities to their policies for relationship creation
   human_policy_relationships = flatten([
     for human_name, human in local.human_identities_map : [
       for policy in human.policies.identity_policies : {
-        human_name  = human_name
-        policy_name = policy
-        key         = "${human_name}__${policy}"
+        human_name    = human_name
+        policy_name   = policy
+        key           = "${human_name}__${policy}"
+        identity_type = "regular"
       }
     ]
   ])
+
+  # Map EntraID human identities to their policies
+  entraid_human_policy_relationships = flatten([
+    for human_name, human in local.entraid_human_identities_map : [
+      for policy in human.policies.identity_policies : {
+        human_name    = human_name
+        policy_name   = policy
+        key           = "${human_name}__${policy}_entraid"
+        identity_type = "entraid"
+      }
+    ]
+  ])
+
+  # Combined human policy relationships
+  all_human_policy_relationships = concat(local.human_policy_relationships, local.entraid_human_policy_relationships)
 
   # Map application identities to their policies
   app_policy_relationships = flatten([
@@ -91,10 +131,10 @@ locals {
   # Create auth method metadata
   auth_methods = {
     github = {
-      type          = "github"
-      mount_path    = "github"
-      accessor      = try(vault_github_auth_backend.hashicorp.accessor, "")
-      organization  = "hashicorp"
+      type         = "github"
+      mount_path   = "github"
+      accessor     = try(vault_github_auth_backend.hashicorp.accessor, "")
+      organization = "hashicorp"
     }
     pki = {
       type       = "pki"
@@ -121,6 +161,11 @@ locals {
       mount_path = "approle"
       accessor   = try(vault_auth_backend.approle.accessor, "")
     }
+    oidc = {
+      type       = "oidc"
+      mount_path = "oidc"
+      accessor   = try(vault_jwt_auth_backend.entraid[0].accessor, "")
+    }
   }
 
   # Map humans to their GitHub authentication
@@ -138,6 +183,15 @@ locals {
       human_name = human_name
       cert_cn    = human.authentication.pki
       key        = "${human_name}__pki"
+    }
+  ]
+
+  # Map EntraID humans to their OIDC authentication
+  entraid_human_oidc_auth = [
+    for human_name, human in local.entraid_human_with_oidc : {
+      human_name = human_name
+      username   = human.authentication.oidc
+      key        = "${human_name}__oidc"
     }
   ]
 

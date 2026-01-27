@@ -42,3 +42,9 @@ validation.tfplan
 vault.hclic
 
 .env
+
+# EntraID SCIM state (contains sensitive tokens)
+.entraid-scim-state.json
+
+# ngrok logs
+ngrok.log
