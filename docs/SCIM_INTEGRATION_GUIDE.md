@@ -6,6 +6,8 @@ This guide provides comprehensive instructions for implementing and configuring 
 
 - [Overview](#overview)
 - [Architecture](#architecture)
+- [Design Decisions](#design-decisions)
+- [Potential Issues and Mitigations](#potential-issues-and-mitigations)
 - [Prerequisites](#prerequisites)
 - [Phase 1: OIDC Authentication Setup](#phase-1-oidc-authentication-setup)
 - [Phase 2: SCIM Bridge Implementation](#phase-2-scim-bridge-implementation)
@@ -15,6 +17,8 @@ This guide provides comprehensive instructions for implementing and configuring 
 - [Production Deployment](#production-deployment)
 - [Verification Steps](#verification-steps)
 - [Troubleshooting](#troubleshooting)
+- [Success Metrics](#success-metrics)
+- [Rollback Plan](#rollback-plan)
 - [Related Documentation](#related-documentation)
 
 ## Overview
@@ -63,6 +67,116 @@ EntraID → SCIM Bridge → YAML Files → GitHub PR → Review → Merge → Te
                    │  groups/)       │                    │ Resources   │
                    └─────────────────┘                    └─────────────┘
 ```
+
+## Design Decisions
+
+This section documents the key architectural decisions made during implementation.
+
+### Email as Primary Identifier
+
+**Decision**: Use email (not UPN) for OIDC alias name
+
+**Rationale:**
+- Entra ID SCIM sends both `userName` (UPN) and `emails[0].value` (email)
+- OIDC backend returns `email` claim by default
+- Email is more portable (UPN can change if domain changes)
+- Consistent with existing GitHub auth pattern
+
+### Multi-Auth Support
+
+**Decision**: Support OIDC + GitHub + PKI for Entra ID users
+
+**Rationale:**
+- Follows established pattern from LDAP implementation
+- Users can authenticate via Entra ID OIDC (primary) or GitHub (backup/convenience)
+- PKI support enables certificate-based auth for service accounts
+- Single entity with multiple aliases
+
+**Example YAML with Multi-Auth:**
+```yaml
+authentication:
+  oidc: "alice.smith@company.com"  # Primary
+  github: "asmith"                  # Optional backup
+  pki: "alice.smith.cert"          # Optional for advanced use
+  disabled: false
+```
+
+### File Naming Convention
+
+**Decision**: Use `entraid_human_firstname_lastname.yaml` pattern
+
+**Rationale:**
+- Consistent with existing `ldap_human_*.yaml` pattern
+- data.tf filters by filename prefix: `startswith(filename, "entraid_human_")`
+- Easy to identify provisioning source at a glance
+- Enables separate resources per identity type
+
+### Soft Delete Strategy
+
+**Decision**: Deactivated users marked with `status: deactivated` and `disabled: true`
+
+**Rationale:**
+- Preserves audit trail for compliance
+- File history retained in Git
+- Can be reactivated if user returns
+- Prevents accidental data loss
+
+### Group Management Approach
+
+**Decision**: SCIM bridge updates identity_groups YAML files
+
+**Rationale:**
+- Provides manual review for group membership changes
+- Maintains Git audit trail
+- Consistent with GitOps workflow
+- Alternative (OIDC group claims) bypasses manual review
+
+## Potential Issues and Mitigations
+
+### SCIM ID Persistence
+
+**Problem**: SCIM uses UUIDs to identify users, but Terraform uses names. If user name changes, mapping breaks.
+
+**Mitigation:**
+- Store SCIM ID in `metadata.entraid_object_id` (immutable)
+- Maintain persistent mapping file: `scim-bridge/data/user_mapping.json`
+- On UPDATE, lookup existing filename by SCIM ID before regenerating YAML
+
+### Race Conditions
+
+**Problem**: Multiple SCIM requests arriving simultaneously could create conflicting Git branches/PRs.
+
+**Mitigation:**
+- Add timestamp to branch names: `scim-create-alice-smith-20260123143022`
+- Use FastAPI background tasks for PR creation (non-blocking)
+- Implement request queuing if needed
+
+### Schema Validation Failures
+
+**Problem**: SCIM bridge generates invalid YAML that fails Terraform validation.
+
+**Mitigation:**
+- Validate YAML against schema BEFORE creating PR
+- Return SCIM error response if validation fails
+- Log validation errors for debugging
+
+### Group Name Mismatches
+
+**Problem**: Entra ID group names don't match existing Vault group YAML filenames.
+
+**Mitigation:**
+- Implement fuzzy matching (e.g., "Developers" matches "identity_group_developers")
+- Create new group files if no match found
+- Allow manual mapping configuration in SCIM bridge config
+
+### Entra ID Attribute Mapping Mismatches
+
+**Problem**: Entra ID sends unexpected attribute values (e.g., null title, weird department names).
+
+**Mitigation:**
+- Use safe defaults: `title or "employee"`, `department or "general"`
+- Sanitize all inputs (remove special characters, lowercase)
+- Log warnings for unexpected values
 
 ## Prerequisites
 
@@ -908,13 +1022,45 @@ PATCH /scim/v2/Users/{id}
 DELETE /scim/v2/Users/{id}
 ```
 
+## Success Metrics
+
+Track these metrics to verify integration success:
+
+- ✅ All EntraID users can login via OIDC
+- ✅ Provisioning latency <4 hours (PR review + terraform apply)
+- ✅ <5% error rate in SCIM events
+- ✅ 100% schema validation pass rate
+- ✅ Zero unauthorized access incidents
+- ✅ Full audit trail in Git history
+- ✅ Deprovisioned users denied access within 24 hours
+- ✅ Group memberships accurate and up-to-date
+
+## Rollback Plan
+
+If issues occur during rollout:
+
+1. **Stop SCIM provisioning** in EntraID (pause sync)
+2. **Keep OIDC auth enabled** (existing users can still login)
+3. **Do NOT merge pending PRs** until issues resolved
+4. **Investigate SCIM bridge logs** for errors
+5. **Fix issues** in SCIM bridge code or configuration
+6. **Resume provisioning** once stable
+
+For complete rollback:
+
+1. Set `enable_entraid_auth = false` in tfvars
+2. Run `terraform apply` (removes OIDC backend)
+3. Delete EntraID identity YAML files
+4. Run `terraform apply` (removes entities)
+5. Users fall back to GitHub/LDAP/PKI auth
+
 ## Related Documentation
 
 ### Project Documentation
 
 - **[README.md](../README.md)** - Project overview and getting started guide
 - **[CLAUDE.md](../CLAUDE.md)** - Development guidance and project architecture
-- **[ENTRAID_SCIM_IMPLEMENTATION_PLAN.md](ENTRAID_SCIM_IMPLEMENTATION_PLAN.md)** - Detailed implementation plan and requirements
+- **[ENTRAID_SCIM_IMPLEMENTATION_PLAN.md](archive/ENTRAID_SCIM_IMPLEMENTATION_PLAN.md)** - Original implementation plan (archived)
 - **[LDAP_IMPLEMENTATION_PLAN.md](LDAP_IMPLEMENTATION_PLAN.md)** - LDAP integration documentation for comparison
 
 ### Configuration Files
