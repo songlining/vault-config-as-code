@@ -43,7 +43,7 @@ CYPHER
 
 # Create Regular Human Identity nodes
 resource "null_resource" "neo4j_human_identities" {
-  for_each = var.enable_neo4j_integration ? local.human_identities_map : {}
+  for_each = var.enable_neo4j_integration ? tomap(local.human_identities_map) : tomap({})
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -70,7 +70,7 @@ CYPHER
 
 # Create EntraID Human Identity nodes
 resource "null_resource" "neo4j_entraid_human_identities" {
-  for_each = var.enable_neo4j_integration ? local.entraid_human_identities_map : {}
+  for_each = var.enable_neo4j_integration ? tomap(local.entraid_human_identities_map) : tomap({})
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -101,7 +101,7 @@ CYPHER
 
 # Create Application Identity nodes
 resource "null_resource" "neo4j_app_identities" {
-  for_each = var.enable_neo4j_integration ? local.application_identities_map : {}
+  for_each = var.enable_neo4j_integration ? tomap(local.application_identities_map) : tomap({})
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -129,7 +129,7 @@ CYPHER
 
 # Create Identity Group nodes (internal groups)
 resource "null_resource" "neo4j_internal_identity_groups" {
-  for_each = var.enable_neo4j_integration ? local.internal_groups_map : {}
+  for_each = var.enable_neo4j_integration ? tomap(local.internal_groups_map) : tomap({})
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -152,7 +152,7 @@ CYPHER
 
 # Create Identity Group nodes (external groups)
 resource "null_resource" "neo4j_external_identity_groups" {
-  for_each = var.enable_neo4j_integration ? local.external_groups_map : {}
+  for_each = var.enable_neo4j_integration ? tomap(local.external_groups_map) : tomap({})
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -176,7 +176,7 @@ CYPHER
 
 # Create Policy nodes
 resource "null_resource" "neo4j_policies" {
-  for_each = var.enable_neo4j_integration ? toset(local.all_policies) : []
+  for_each = var.enable_neo4j_integration ? toset(local.all_policies) : toset([])
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -191,7 +191,7 @@ CYPHER
 
 # Create Auth Method nodes
 resource "null_resource" "neo4j_auth_methods" {
-  for_each = var.enable_neo4j_integration ? local.auth_methods : {}
+  for_each = var.enable_neo4j_integration ? tomap(local.auth_methods) : tomap({})
 
   depends_on = [null_resource.neo4j_initialize]
 
@@ -212,7 +212,7 @@ CYPHER
 
 # Create Human -> Group MEMBER_OF relationships (regular humans)
 resource "null_resource" "neo4j_human_group_relationships" {
-  for_each = var.enable_neo4j_integration ? { for m in local.human_group_memberships : m.key => m } : {}
+  for_each = var.enable_neo4j_integration ? { for m in local.human_group_memberships : m.key => m } : tomap({})
 
   depends_on = [
     null_resource.neo4j_human_identities,

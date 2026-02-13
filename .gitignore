@@ -48,3 +48,5 @@ vault.hclic
 
 # ngrok logs
 ngrok.log
+
+.entraid-scim-state.json

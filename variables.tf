@@ -46,3 +46,15 @@ variable "environment" {
 #   type        = string
 #   description = "Azure subscription id"
 # }
+
+variable "enable_egp_policy" {
+  type        = bool
+  description = "Enable Endpoint Governing Policies (requires Vault Enterprise Premium)"
+  default     = false
+}
+
+variable "enable_ui_custom_message" {
+  type        = bool
+  description = "Enable custom UI login message (requires Vault 1.16+)"
+  default     = false
+}

@@ -515,6 +515,7 @@ resource "vault_ssh_secret_backend_role" "ubuntu" {
 }
 
 resource "vault_config_ui_custom_message" "maintenance" {
+  count          = var.enable_ui_custom_message ? 1 : 0
   title          = "HashiCorp Employees, welcome!"
   message_base64 = base64encode("\nHashiCorp Employees can login to Vault using their github personal token.\n\nThe configuration of this cluster is managed using terraform code. Please do not make any manual changes to the configuration.\n\nFor any changes, please raise a PR in the repository.")
   type           = "modal"

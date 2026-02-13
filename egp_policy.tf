@@ -1,4 +1,5 @@
 resource "vault_egp_policy" "only-allow-machines-to-request-their-own-id" {
+  count             = var.enable_egp_policy ? 1 : 0
   name              = "only-allow-machines-to-request-their-own-id"
   paths             = ["pki_intermediate/issue/machine-id"]
   enforcement_level = "hard-mandatory"
