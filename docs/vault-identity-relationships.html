@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault Identity — Entity, Group &amp; Alias Relationships</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ THEME — Blueprint aesthetic ============ */
+  :root {
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+
+    --bg: #f4f7fa;
+    --surface: #ffffff;
+    --surface2: #edf1f7;
+    --surface-elevated: #ffffff;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-bright: rgba(0, 0, 0, 0.16);
+    --text: #1e2a3a;
+    --text-dim: #6b7a8d;
+
+    --entity: #0369a1;
+    --entity-dim: rgba(3, 105, 161, 0.08);
+    --alias: #b45309;
+    --alias-dim: rgba(180, 83, 9, 0.08);
+    --group: #0f766e;
+    --group-dim: rgba(15, 118, 110, 0.08);
+    --policy: #9f1239;
+    --policy-dim: rgba(159, 18, 57, 0.08);
+    --auth: #6d28d9;
+    --auth-dim: rgba(109, 40, 217, 0.08);
+    --grid-line: rgba(30, 42, 58, 0.04);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1923;
+      --surface: #172030;
+      --surface2: #1e293b;
+      --surface-elevated: #1e2d42;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-bright: rgba(255, 255, 255, 0.14);
+      --text: #e2e8f0;
+      --text-dim: #7e8fa3;
+
+      --entity: #38bdf8;
+      --entity-dim: rgba(56, 189, 248, 0.12);
+      --alias: #fbbf24;
+      --alias-dim: rgba(251, 191, 36, 0.1);
+      --group: #5eead4;
+      --group-dim: rgba(94, 234, 212, 0.1);
+      --policy: #fda4af;
+      --policy-dim: rgba(253, 164, 175, 0.1);
+      --auth: #c4b5fd;
+      --auth-dim: rgba(196, 181, 253, 0.1);
+      --grid-line: rgba(255, 255, 255, 0.03);
+    }
+  }
+
+  /* ============ RESET + BASE ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: var(--text);
+    font-family: var(--font-body);
+    padding: 40px;
+    min-height: 100vh;
+  }
+
+  /* ============ ANIMATION ============ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeScale {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate {
+    animation: fadeUp 0.45s ease-out both;
+    animation-delay: calc(var(--i, 0) * 0.07s);
+  }
+  .animate-scale {
+    animation: fadeScale 0.4s ease-out both;
+    animation-delay: calc(var(--i, 0) * 0.07s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ============ LAYOUT ============ */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .lead {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 780px;
+    margin-bottom: 36px;
+  }
+
+  .lead code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--entity-dim);
+    color: var(--entity);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  /* ============ SECTION CARD ============ */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+
+  .section--hero {
+    background: var(--surface-elevated);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    padding: 28px 32px;
+  }
+
+  .section--recessed {
+    background: var(--surface2);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* ============ MERMAID CONTAINER ============ */
+  .mermaid-wrap {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 24px;
+    overflow: auto;
+    margin-bottom: 24px;
+  }
+
+  .mermaid-wrap .mermaid {
+    display: flex;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    transform-origin: top center;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 2px;
+    z-index: 10;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+  }
+
+  .zoom-controls button {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .zoom-controls button:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  .mermaid-wrap { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .mermaid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+  .mermaid-wrap::-webkit-scrollbar-track { background: transparent; }
+  .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .mermaid-wrap::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  .mermaid-wrap.is-zoomed { cursor: grab; }
+  .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+
+  /* ============ MERMAID SVG OVERRIDES ============ */
+  .mermaid .nodeLabel { color: var(--text) !important; font-family: var(--font-body) !important; font-size: 15px !important; }
+  .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; font-family: var(--font-mono) !important; font-size: 12px !important; }
+  .mermaid .edgeLabel rect { fill: var(--bg) !important; }
+  .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { stroke-width: 1.5px !important; }
+  .mermaid .edge-pattern-solid { stroke-width: 1.5px !important; }
+
+  /* ============ CONCEPT GRID ============ */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .concept-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    border-top: 3px solid var(--border);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .concept-card:hover {
+    border-color: var(--border-bright);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  .concept-card--entity { border-top-color: var(--entity); }
+  .concept-card--alias { border-top-color: var(--alias); }
+  .concept-card--group { border-top-color: var(--group); }
+  .concept-card--policy { border-top-color: var(--policy); }
+  .concept-card--auth { border-top-color: var(--auth); }
+
+  .concept-card .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 8px;
+  }
+
+  .concept-card--entity .label { color: var(--entity); }
+  .concept-card--alias .label { color: var(--alias); }
+  .concept-card--group .label { color: var(--group); }
+  .concept-card--policy .label { color: var(--policy); }
+  .concept-card--auth .label { color: var(--auth); }
+
+  .concept-card .name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .concept-card .desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-dim);
+  }
+
+  .concept-card code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .concept-card--entity code { background: var(--entity-dim); color: var(--entity); }
+  .concept-card--alias code { background: var(--alias-dim); color: var(--alias); }
+  .concept-card--group code { background: var(--group-dim); color: var(--group); }
+  .concept-card--policy code { background: var(--policy-dim); color: var(--policy); }
+  .concept-card--auth code { background: var(--auth-dim); color: var(--auth); }
+
+  /* ============ FLOW EXPLANATION ============ */
+  .flow-steps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    counter-reset: step;
+  }
+
+  .flow-step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+
+  .flow-step:last-child { border-bottom: none; }
+
+  .flow-step .num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--entity-dim);
+    color: var(--entity);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .flow-step .step-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .flow-step .step-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .flow-step code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--entity-dim);
+    color: var(--entity);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ============ LEGEND ============ */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* ============ CALLOUT ============ */
+  .callout {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--entity);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .callout strong { color: var(--text); }
+
+  .callout code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--entity-dim);
+    color: var(--entity);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ============ TWO COLUMN ============ */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    h1 { font-size: 24px; }
+    .concept-grid { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .mermaid-wrap { padding: 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1 class="animate" style="--i:0">Vault Identity System</h1>
+  <p class="subtitle animate" style="--i:1">entity &middot; entity alias &middot; identity group &middot; group alias</p>
+
+  <p class="lead animate" style="--i:2">
+    Vault's identity system unifies authentication across multiple backends into a single identity.
+    A person who logs in via GitHub <em>and</em> LDAP is still one <code>Entity</code> with two
+    <code>Entity Aliases</code>. Groups aggregate entities and carry policies — giving you
+    one place to manage access regardless of how someone authenticates.
+  </p>
+
+  <!-- ============ CORE CONCEPTS ============ -->
+  <div class="concept-grid">
+    <div class="concept-card concept-card--entity animate-scale" style="--i:3">
+      <div class="label">Entity</div>
+      <div class="name">Canonical Identity</div>
+      <div class="desc">Represents a single person or machine. One entity per real-world identity. Carries metadata and directly-assigned policies via <code>identity/entity</code>.</div>
+    </div>
+    <div class="concept-card concept-card--alias animate-scale" style="--i:4">
+      <div class="label">Entity Alias</div>
+      <div class="name">Auth Method Link</div>
+      <div class="desc">Maps a login credential to its entity. Each alias is scoped to one auth mount — e.g., <code>github/alice</code> or <code>ldap/alice</code>. One entity can have many aliases.</div>
+    </div>
+    <div class="concept-card concept-card--group animate-scale" style="--i:5">
+      <div class="label">Identity Group</div>
+      <div class="name">Collection of Entities</div>
+      <div class="desc">Internal groups have explicit members. External groups get members from an IdP via a <code>Group Alias</code>. Groups carry policies inherited by all members.</div>
+    </div>
+    <div class="concept-card concept-card--policy animate-scale" style="--i:6">
+      <div class="label">Policy</div>
+      <div class="name">Access Rules</div>
+      <div class="desc">ACL or Sentinel policies attached to entities or groups. The effective token policy set is the union of entity policies + all group policies.</div>
+    </div>
+    <div class="concept-card concept-card--auth animate-scale" style="--i:7">
+      <div class="label">Auth Method</div>
+      <div name name="name" class="name">Login Backend</div>
+      <div class="desc">GitHub, LDAP, AWS IAM, Userpass, PKI, etc. Each mounted auth method creates aliases in its own namespace — <code>auth/github/</code>, <code>auth/ldap/</code>.</div>
+    </div>
+  </div>
+
+  <!-- ============ RELATIONSHIP DIAGRAM ============ -->
+  <div class="section section--hero animate" style="--i:8">
+    <div class="section-label" style="color: var(--entity);">
+      <span class="dot" style="background: var(--entity);"></span> Relationship Model
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background: var(--entity);"></div> Entity</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: var(--alias);"></div> Entity Alias</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: var(--group);"></div> Identity Group</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: var(--policy);"></div> Policy</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: var(--auth);"></div> Auth Method</div>
+    </div>
+
+    <div class="mermaid-wrap">
+      <div class="zoom-controls">
+        <button onclick="zoomDiagram(this, 1.2)" title="Zoom in">+</button>
+        <button onclick="zoomDiagram(this, 0.8)" title="Zoom out">&minus;</button>
+        <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
+      </div>
+      <pre class="mermaid">
+        graph LR
+          subgraph AuthMethods["Auth Methods"]
+            GH["GitHub OAuth"]
+            LDAP["LDAP"]
+            AWS["AWS IAM"]
+          end
+
+          subgraph Aliases["Entity Aliases"]
+            A1["Alias: github/alice"]
+            A2["Alias: ldap/alice"]
+            A3["Alias: github/bob"]
+            A4["Alias: aws/svc-deploy"]
+          end
+
+          subgraph Entities["Entities"]
+            E1["Entity: Alice"]
+            E2["Entity: Bob"]
+            E3["Entity: svc-deploy"]
+          end
+
+          subgraph Groups["Identity Groups"]
+            IG1["Group: engineering"]
+            IG2["Group: platform-team"]
+            IG3["Group: deploy-svc"]
+          end
+
+          subgraph Policies["Policies"]
+            P1["kv-read"]
+            P2["kv-admin"]
+            P3["deploy-prod"]
+            P4["pki-issue"]
+          end
+
+          GH -.->|creates| A1
+          GH -.->|creates| A3
+          LDAP -.->|creates| A2
+          AWS -.->|creates| A4
+
+          A1 -->|resolves to| E1
+          A2 -->|resolves to| E1
+          A3 -->|resolves to| E2
+          A4 -->|resolves to| E3
+
+          E1 -->|member of| IG1
+          E2 -->|member of| IG1
+          E2 -->|member of| IG2
+          E3 -->|member of| IG3
+
+          IG2 -->|subgroup of| IG1
+
+          E1 -.->|direct policy| P4
+          IG1 -->|grants| P1
+          IG2 -->|grants| P2
+          IG3 -->|grants| P3
+
+          classDef authNode fill:#6d28d920,stroke:#6d28d9,stroke-width:2px
+          classDef aliasNode fill:#b4530920,stroke:#b45309,stroke-width:2px
+          classDef entityNode fill:#0369a120,stroke:#0369a1,stroke-width:2px
+          classDef groupNode fill:#0f766e20,stroke:#0f766e,stroke-width:2px
+          classDef policyNode fill:#9f123920,stroke:#9f1239,stroke-width:2px
+
+          class GH,LDAP,AWS authNode
+          class A1,A2,A3,A4 aliasNode
+          class E1,E2,E3 entityNode
+          class IG1,IG2,IG3 groupNode
+          class P1,P2,P3,P4 policyNode
+      </pre>
+    </div>
+  </div>
+
+  <!-- ============ HOW LOGIN RESOLVES ============ -->
+  <div class="section animate" style="--i:9">
+    <div class="section-label" style="color: var(--alias);">
+      <span class="dot" style="background: var(--alias);"></span> Login Resolution Flow
+    </div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="num">1</div>
+        <div>
+          <div class="step-title">Authenticate</div>
+          <div class="step-desc">User logs in via an auth method — e.g., <code>vault login -method=github</code>. The auth method validates the credentials.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">2</div>
+        <div>
+          <div class="step-title">Resolve Alias</div>
+          <div class="step-desc">Vault looks up the <code>Entity Alias</code> for this auth mount + login name. If no alias exists, Vault auto-creates a new Entity and Alias.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">3</div>
+        <div>
+          <div class="step-title">Load Entity</div>
+          <div class="step-desc">The alias points to exactly one <code>Entity</code>. Vault loads the entity's metadata, directly-assigned policies, and group memberships.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">4</div>
+        <div>
+          <div class="step-title">Inherit Group Policies</div>
+          <div class="step-desc">Vault walks the entity's group memberships — including nested subgroups — and unions all group policies together.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="num">5</div>
+        <div>
+          <div class="step-title">Issue Token</div>
+          <div class="step-desc">The resulting token carries: auth method policies + entity direct policies + all inherited group policies. This is the effective policy set.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INTERNAL vs EXTERNAL GROUPS ============ -->
+  <div class="two-col">
+    <div class="section animate" style="--i:10; border-top: 3px solid var(--group);">
+      <div class="section-label" style="color: var(--group);">
+        <span class="dot" style="background: var(--group);"></span> Internal Group
+      </div>
+      <div style="font-size:13px; line-height:1.7; color:var(--text-dim);">
+        Members are <strong style="color:var(--text)">explicitly assigned</strong> — you add entities or child groups directly in Vault.
+        Best for Vault-native access control where you manage membership manually or via Terraform.
+      </div>
+      <div style="margin-top:14px; font-family:var(--font-mono); font-size:12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; white-space:pre-wrap; line-height:1.7; overflow-wrap:break-word;">resource "vault_identity_group" "eng" {
+  name     = "engineering"
+  type     = "internal"
+  policies = ["kv-read"]
+
+  member_entity_ids = [
+    vault_identity_entity.alice.id,
+    vault_identity_entity.bob.id,
+  ]
+}</div>
+    </div>
+    <div class="section animate" style="--i:11; border-top: 3px solid var(--auth);">
+      <div class="section-label" style="color: var(--auth);">
+        <span class="dot" style="background: var(--auth);"></span> External Group
+      </div>
+      <div style="font-size:13px; line-height:1.7; color:var(--text-dim);">
+        Members come from an <strong style="color:var(--text)">external identity provider</strong> via a Group Alias.
+        When the IdP says "alice is in team-platform", Vault maps that to this group automatically.
+      </div>
+      <div style="margin-top:14px; font-family:var(--font-mono); font-size:12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; white-space:pre-wrap; line-height:1.7; overflow-wrap:break-word;">resource "vault_identity_group" "gh_eng" {
+  name     = "gh-engineering"
+  type     = "external"
+  policies = ["kv-read"]
+}
+
+resource "vault_identity_group_alias" "gh_eng" {
+  name           = "engineering"
+  mount_accessor = vault_github_auth_backend.org.accessor
+  canonical_id   = vault_identity_group.gh_eng.id
+}</div>
+    </div>
+  </div>
+
+  <!-- ============ KEY RULES ============ -->
+  <div class="callout animate" style="--i:12">
+    <strong>Key rules.</strong>
+    Each Entity Alias is scoped to exactly one auth mount — you can't share an alias across methods.
+    An Entity can have at most one alias per auth mount.
+    Merging two entities is permanent and combines all aliases, group memberships, and policies.
+    External group membership is <em>read-only</em> in Vault — it's driven entirely by the IdP.
+  </div>
+
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    layout: 'elk',
+    themeVariables: {
+      primaryColor: isDark ? '#1e2d42' : '#edf5ff',
+      primaryBorderColor: isDark ? '#38bdf8' : '#0369a1',
+      primaryTextColor: isDark ? '#e2e8f0' : '#1e2a3a',
+      secondaryColor: isDark ? '#1a2e2b' : '#e6f7f3',
+      secondaryBorderColor: isDark ? '#5eead4' : '#0f766e',
+      secondaryTextColor: isDark ? '#e2e8f0' : '#1e2a3a',
+      tertiaryColor: isDark ? '#2e2618' : '#fef8ee',
+      tertiaryBorderColor: isDark ? '#fbbf24' : '#b45309',
+      tertiaryTextColor: isDark ? '#e2e8f0' : '#1e2a3a',
+      lineColor: isDark ? '#475569' : '#94a3b8',
+      fontSize: '15px',
+      fontFamily: "'DM Sans', system-ui, sans-serif",
+    }
+  });
+</script>
+<script>
+  function updateZoomState(wrap) {
+    var target = wrap.querySelector('.mermaid');
+    var zoom = parseFloat(target.dataset.zoom || '1');
+    wrap.classList.toggle('is-zoomed', zoom > 1);
+  }
+
+  function zoomDiagram(btn, factor) {
+    var wrap = btn.closest('.mermaid-wrap');
+    var target = wrap.querySelector('.mermaid');
+    var current = parseFloat(target.dataset.zoom || '1');
+    var next = Math.min(Math.max(current * factor, 0.3), 5);
+    target.dataset.zoom = next;
+    target.style.transform = 'scale(' + next + ')';
+    updateZoomState(wrap);
+  }
+
+  function resetZoom(btn) {
+    var wrap = btn.closest('.mermaid-wrap');
+    var target = wrap.querySelector('.mermaid');
+    target.dataset.zoom = '1';
+    target.style.transform = 'scale(1)';
+    updateZoomState(wrap);
+  }
+
+  document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+    wrap.addEventListener('wheel', function(e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      var target = wrap.querySelector('.mermaid');
+      var current = parseFloat(target.dataset.zoom || '1');
+      var factor = e.deltaY < 0 ? 1.1 : 0.9;
+      var next = Math.min(Math.max(current * factor, 0.3), 5);
+      target.dataset.zoom = next;
+      target.style.transform = 'scale(' + next + ')';
+      updateZoomState(wrap);
+    }, { passive: false });
+
+    var startX, startY, scrollL, scrollT;
+    wrap.addEventListener('mousedown', function(e) {
+      if (e.target.closest('.zoom-controls')) return;
+      var target = wrap.querySelector('.mermaid');
+      if (parseFloat(target.dataset.zoom || '1') <= 1) return;
+      wrap.classList.add('is-panning');
+      startX = e.clientX;
+      startY = e.clientY;
+      scrollL = wrap.scrollLeft;
+      scrollT = wrap.scrollTop;
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!wrap.classList.contains('is-panning')) return;
+      wrap.scrollLeft = scrollL - (e.clientX - startX);
+      wrap.scrollTop = scrollT - (e.clientY - startY);
+    });
+    window.addEventListener('mouseup', function() {
+      wrap.classList.remove('is-panning');
+    });
+  });
+</script>
+
+</body>
+</html>
